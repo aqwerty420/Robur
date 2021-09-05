@@ -377,7 +377,7 @@ function Combo(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
   if (Menu.Get('qCombo')) {
     if (tryQ(enemies)) return;
   }
-  if (Menu.Get('wCombo') && !Menu.Get('wAuto')) {
+  if (Menu.Get('wCombo')) {
     if (tryW(enemies)) return;
   }
   if (Menu.Get('eCombo')) {
@@ -389,7 +389,7 @@ function Harass(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
   if (Menu.Get('qHarass')) {
     if (tryQ(enemies)) return;
   }
-  if (Menu.Get('wHarass') && !Menu.Get('wAuto')) {
+  if (Menu.Get('wHarass')) {
     if (tryW(enemies)) return;
   }
   if (Menu.Get('eHarass')) {
