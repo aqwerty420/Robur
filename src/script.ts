@@ -52,7 +52,7 @@ const ballMissileNames: string[] = ['OrianaIzuna', 'OrianaRedact'];
 const collisions: CollisionsPossible = { WindWall: true, Wall: true };
 const qRange = 825;
 const qSpeed = 1400;
-const qRadius = 80;
+const ballRadius = 80;
 const wRadius = 225;
 const eSpeed = 1850;
 const rRadius = 415;
@@ -72,7 +72,7 @@ const qInput: PredictionInput = {
   Range: qRange,
   Speed: qSpeed,
   Delay: baseDelay,
-  Radius: qRadius,
+  Radius: ballRadius,
   Type: SpellType.Linear,
   UseHitbox: true,
   Collisions: collisions,
@@ -95,7 +95,7 @@ const E = SpellLib.Skillshot({
   Range: 1120,
   Speed: eSpeed,
   Delay: baseDelay,
-  Radius: qRadius,
+  Radius: ballRadius,
   Type: SpellType.Linear,
   UseHitbox: true,
   Collisions: collisions, // WIP not 100% sure
@@ -168,7 +168,7 @@ function InitMenu(): void {
     });
     Menu.NewTree('e', 'E Options', function () {
       Menu.Checkbox('eCombo', 'Combo', true);
-      Menu.Checkbox('eHarass', 'Harass', true);
+      Menu.Checkbox('eHarass', 'Harass', false);
       //Menu.Checkbox('eFlee', 'Flee', true);
       Menu.Checkbox('eKs', 'Kill Steal', true);
       Menu.Checkbox('eAuto', 'Auto (Protect from dmg)', true);
@@ -284,40 +284,48 @@ function OnDraw(): void {
 }
 
 function tryQ(enemies: AIHeroClient[]): boolean {
-  if (Q.IsReady() && Q.GetManaCost() <= Player.Mana) {
-    if (enemies.length > 1 && ballOnSelf) {
-      const castPos = Q.GetBestLinearCastPos(enemies);
-      if (castPos[1] >= 2) {
-        return Q.Cast(castPos[0]);
-      }
+  if (!Q.IsReady() || Q.GetManaCost() > Player.Mana) return false;
+  if (enemies.length > 1 && ballOnSelf) {
+    const castPos = Q.GetBestLinearCastPos(enemies);
+    if (castPos[1] >= 2) {
+      return Q.Cast(castPos[0]);
     }
-    const target = Q.GetTarget();
-    if (!target) return;
-    const result = Libs.Prediction.GetPredictedPosition(
-      target,
-      qInput,
-      ballPosition
-    );
-    if (result && result.HitChance >= Enums.HitChance.Collision)
-      return Q.Cast(result.CastPosition);
   }
+  const target = Q.GetTarget();
+  if (!target) return;
+  const result = Libs.Prediction.GetPredictedPosition(
+    target,
+    qInput,
+    ballPosition
+  );
+  if (result && result.HitChance >= Enums.HitChance.Collision)
+    return Q.Cast(result.CastPosition);
   return false;
 }
 
 function tryW(enemies: AIHeroClient[]): boolean {
-  if (W.IsReady() && W.GetManaCost() <= Player.Mana) {
-    for (let i = 0; i < enemies.length; i++) {
-      if (IsInRange(enemies[i], wRadius, baseDelay)) {
-        return W.Cast();
-      }
+  if (!W.IsReady() || W.GetManaCost() > Player.Mana) return false;
+  for (let i = 0; i < enemies.length; i++) {
+    if (IsInRange(enemies[i], wRadius, baseDelay)) {
+      return W.Cast();
     }
   }
   return false;
 }
 
 function tryE(enemies: AIHeroClient[]) {
-  if (E.IsReady() && E.GetManaCost() <= Player.Mana) {
-    //WIP
+  if (!E.IsReady || E.GetManaCost() > Player.Mana) return false;
+  for (let i = 0; i < enemies.length; i++) {
+    const reachDelay = ballPosition.Distance(enemies[i]) / eSpeed + baseDelay;
+    const enemyPos = enemies[i].FastPrediction(reachDelay);
+    const distance = enemyPos.LineDistance(
+      ballPosition,
+      Player.Position,
+      false
+    );
+    if (distance <= ballRadius) {
+      return E.Cast(Player);
+    }
   }
   return false;
 }
@@ -372,10 +380,9 @@ function Combo(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
   if (Menu.Get('wCombo') && !Menu.Get('wAuto')) {
     if (tryW(enemies)) return;
   }
-  //else if (
-  //Menu.Get('eCombo') &&
-  //E.IsReady() &&
-  //E.GetManaCost() <= Player.Mana)
+  if (Menu.Get('eCombo')) {
+    if (tryE(enemies)) return;
+  }
 }
 
 function Harass(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
@@ -383,6 +390,9 @@ function Harass(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
     if (tryQ(enemies)) return;
   }
   if (Menu.Get('wHarass') && !Menu.Get('wAuto')) {
+    if (tryW(enemies)) return;
+  }
+  if (Menu.Get('eHarass')) {
     if (tryW(enemies)) return;
   }
 }
