@@ -317,19 +317,7 @@ function tryW(enemies: AIHeroClient[]): boolean {
 
 function tryE(enemies: AIHeroClient[]) {
   if (E.IsReady() && E.GetManaCost() <= Player.Mana) {
-    if (enemies.length === 1) {
-      return E.CastOnHitChance(enemies[0], Enums.HitChance.Low);
-    } else {
-      const castPos = E.GetBestLinearCastPos(enemies);
-      if (castPos[1] > 0) {
-        if (castPos[1] < 2) {
-          const target = E.GetTarget();
-          return E.CastOnHitChance(target, Enums.HitChance.Low);
-        } else {
-          return E.Cast(castPos[0]);
-        }
-      }
-    }
+    //WIP
   }
   return false;
 }
