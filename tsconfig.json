@@ -17,6 +17,6 @@
     //"buildMode": "default",
     "tstlVerbose": true,
     //"luaBundleEntry": "src/script.ts",
-    //"luaBundle": "script.lua"
+    //"luaBundle": "output/script.lua"
   }
 }
