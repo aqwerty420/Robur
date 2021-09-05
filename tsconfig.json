@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": [
+      "esnext"
+    ],
+    "noImplicitUseStrict": true,
+    "moduleResolution": "node",
+    
+    "types": ["typescript-to-lua/language-extensions", "lua-types/jit"]
+  },
+  "tstl": {
+    "luaTarget": "JIT",
+    "noHeader": true,
+    "noImplicitSelf": true,
+    "luaLibImport": "inline",
+    //"buildMode": "default",
+    "tstlVerbose": true,
+    //"luaBundleEntry": "src/script.ts",
+    //"luaBundle": "script.lua"
+  }
+}

@@ -1,0 +1,19 @@
+interface Enum_SpellSlots {
+  readonly Unknown: number;
+  readonly Q: number;
+  readonly W: number;
+  readonly E: number;
+  readonly R: number;
+  readonly Summoner1: number;
+  readonly Summoner2: number;
+  readonly Item1: number;
+  readonly Item2: number;
+  readonly Item3: number;
+  readonly Item4: number;
+  readonly Item5: number;
+  readonly Item6: number;
+  readonly Trinket: number;
+  readonly Recall: number;
+  readonly BasicAttack: number;
+  readonly SecondaryAttack: number;
+}
