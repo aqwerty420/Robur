@@ -87,36 +87,56 @@ function OnDraw()
     end
 end
 function tryQ(enemies)
-    if Q:IsReady() and (Q:GetManaCost() <= Player.Mana) then
-        if (#enemies > 1) and ballOnSelf then
-            local castPos = {
-                Q:GetBestLinearCastPos(enemies)
-            }
-            if castPos[2] >= 2 then
-                return Q:Cast(castPos[1])
-            end
+    if (not Q:IsReady()) or (Q:GetManaCost() > Player.Mana) then
+        return false
+    end
+    if (#enemies > 1) and ballOnSelf then
+        local castPos = {
+            Q:GetBestLinearCastPos(enemies)
+        }
+        if castPos[2] >= 2 then
+            return Q:Cast(castPos[1])
         end
-        local target = Q:GetTarget()
-        if not target then
-            return
-        end
-        local result = Libs.Prediction.GetPredictedPosition(target, qInput, ballPosition)
-        if result and (result.HitChance >= Enums.HitChance.Collision) then
-            return Q:Cast(result.CastPosition)
-        end
+    end
+    local target = Q:GetTarget()
+    if not target then
+        return
+    end
+    local result = Libs.Prediction.GetPredictedPosition(target, qInput, ballPosition)
+    if result and (result.HitChance >= Enums.HitChance.Collision) then
+        return Q:Cast(result.CastPosition)
     end
     return false
 end
 function tryW(enemies)
-    if W:IsReady() and (W:GetManaCost() <= Player.Mana) then
-        do
-            local i = 0
-            while i < #enemies do
-                if IsInRange(enemies[i + 1], wRadius, baseDelay) then
-                    return W:Cast()
-                end
-                i = i + 1
+    if (not W:IsReady()) or (W:GetManaCost() > Player.Mana) then
+        return false
+    end
+    do
+        local i = 0
+        while i < #enemies do
+            if IsInRange(enemies[i + 1], wRadius, baseDelay) then
+                return W:Cast()
             end
+            i = i + 1
+        end
+    end
+    return false
+end
+function tryE(enemies)
+    if (not E.IsReady) or (E:GetManaCost() > Player.Mana) then
+        return false
+    end
+    do
+        local i = 0
+        while i < #enemies do
+            local reachDelay = (ballPosition:Distance(enemies[i + 1]) / eSpeed) + baseDelay
+            local enemyPos = enemies[i + 1]:FastPrediction(reachDelay)
+            local distance = enemyPos:LineDistance(ballPosition, Player.Position, false)
+            if distance <= ballRadius then
+                return E:Cast(Player)
+            end
+            i = i + 1
         end
     end
     return false
@@ -139,6 +159,11 @@ function Combo(allies, enemies)
             return
         end
     end
+    if Menu.Get("eCombo") then
+        if tryE(enemies) then
+            return
+        end
+    end
 end
 function Harass(allies, enemies)
     if Menu.Get("qHarass") then
@@ -147,6 +172,11 @@ function Harass(allies, enemies)
         end
     end
     if Menu.Get("wHarass") and (not Menu.Get("wAuto")) then
+        if tryW(enemies) then
+            return
+        end
+    end
+    if Menu.Get("eHarass") then
         if tryW(enemies) then
             return
         end
@@ -163,61 +193,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch77 = orbwalkerMode
-    if ____switch77 == "Combo" then
-        goto ____switch77_case_0
-    elseif ____switch77 == "Harass" then
-        goto ____switch77_case_1
-    elseif ____switch77 == "Lasthit" then
-        goto ____switch77_case_2
-    elseif ____switch77 == "Waveclear" then
-        goto ____switch77_case_3
-    elseif ____switch77 == "Flee" then
-        goto ____switch77_case_4
-    elseif ____switch77 == "nil" then
-        goto ____switch77_case_5
+    local ____switch78 = orbwalkerMode
+    if ____switch78 == "Combo" then
+        goto ____switch78_case_0
+    elseif ____switch78 == "Harass" then
+        goto ____switch78_case_1
+    elseif ____switch78 == "Lasthit" then
+        goto ____switch78_case_2
+    elseif ____switch78 == "Waveclear" then
+        goto ____switch78_case_3
+    elseif ____switch78 == "Flee" then
+        goto ____switch78_case_4
+    elseif ____switch78 == "nil" then
+        goto ____switch78_case_5
     end
-    goto ____switch77_end
-    ::____switch77_case_0::
+    goto ____switch78_end
+    ::____switch78_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch77_end
+            goto ____switch78_end
         end
     end
-    ::____switch77_case_1::
+    ::____switch78_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch77_end
+            goto ____switch78_end
         end
     end
-    ::____switch77_case_2::
+    ::____switch78_case_2::
     do
         do
-            goto ____switch77_end
+            goto ____switch78_end
         end
     end
-    ::____switch77_case_3::
+    ::____switch78_case_3::
     do
         do
-            goto ____switch77_end
+            goto ____switch78_end
         end
     end
-    ::____switch77_case_4::
+    ::____switch78_case_4::
     do
         do
-            goto ____switch77_end
+            goto ____switch78_end
         end
     end
-    ::____switch77_case_5::
+    ::____switch78_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch77_end
+            goto ____switch78_end
         end
     end
-    ::____switch77_end::
+    ::____switch78_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -242,7 +272,7 @@ ballMissileNames = {"OrianaIzuna", "OrianaRedact"}
 collisions = {WindWall = true, Wall = true}
 qRange = 825
 qSpeed = 1400
-qRadius = 80
+ballRadius = 80
 wRadius = 225
 eSpeed = 1850
 rRadius = 415
@@ -252,10 +282,10 @@ mathHuge = _G.math.huge
 ballPosition = Geometry.Vector()
 ballMoving = false
 ballOnSelf = false
-qInput = {Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = qRadius, Type = "Linear", UseHitbox = true, Collisions = collisions}
+qInput = {Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = collisions}
 Q = SpellLib.Skillshot(qInput)
 W = SpellLib.Active({Slot = SpellSlots.W, Range = 0, Speed = mathHuge, Delay = baseDelay, Radius = wRadius, Type = "Circular", UseHitbox = false})
-E = SpellLib.Skillshot({Slot = SpellSlots.E, Range = 1120, Speed = eSpeed, Delay = baseDelay, Radius = qRadius, Type = "Linear", UseHitbox = true, Collisions = collisions})
+E = SpellLib.Skillshot({Slot = SpellSlots.E, Range = 1120, Speed = eSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = collisions})
 R = SpellLib.Active({Slot = SpellSlots.R, Range = 0, Speed = mathHuge, Delay = rDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
 QR = SpellLib.Skillshot({Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
 events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}}
@@ -293,7 +323,7 @@ function InitMenu()
                 "E Options",
                 function()
                     Menu.Checkbox("eCombo", "Combo", true)
-                    Menu.Checkbox("eHarass", "Harass", true)
+                    Menu.Checkbox("eHarass", "Harass", false)
                     Menu.Checkbox("eKs", "Kill Steal", true)
                     Menu.Checkbox("eAuto", "Auto (Protect from dmg)", true)
                     Menu.Checkbox("eShieldSelf", "Protect self", true)
@@ -337,26 +367,6 @@ function RetrieveBallPosition()
             return
         end
     end
-end
-function tryE(enemies)
-    if E:IsReady() and (E:GetManaCost() <= Player.Mana) then
-        if #enemies == 1 then
-            return E:CastOnHitChance(enemies[1], Enums.HitChance.Low)
-        else
-            local castPos = {
-                E:GetBestLinearCastPos(enemies)
-            }
-            if castPos[2] > 0 then
-                if castPos[2] < 2 then
-                    local target = E:GetTarget()
-                    return E:CastOnHitChance(target, Enums.HitChance.Low)
-                else
-                    return E:Cast(castPos[1])
-                end
-            end
-        end
-    end
-    return false
 end
 function getValuePos(enemies, delay)
     local count = 0
