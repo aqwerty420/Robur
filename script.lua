@@ -70,12 +70,16 @@ function OnCastSpell(args)
 end
 function OnProcessSpell(source, spell)
     if ((((not ballMoving) and spell.Target) and source.IsEnemy) and spell.Target.IsHero) and spell.Target.IsAlly then
-        if (Menu.Get("eShieldSelf") and spell.Target.IsMe) and E:CanCast(Player) then
-            E:Cast(Player)
+        if spell.Target.IsMe then
+            if Menu.Get("eShieldSelf") and E:CanCast(Player) then
+                E:Cast(Player)
+            end
+            return
         end
         local target = spell.Target.AsHero
         if Menu.Get("eShield" .. target.CharName) and E:CanCast(target) then
             E:Cast(target)
+            return
         end
     end
 end
@@ -208,61 +212,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch87 = orbwalkerMode
-    if ____switch87 == "Combo" then
-        goto ____switch87_case_0
-    elseif ____switch87 == "Harass" then
-        goto ____switch87_case_1
-    elseif ____switch87 == "Lasthit" then
-        goto ____switch87_case_2
-    elseif ____switch87 == "Waveclear" then
-        goto ____switch87_case_3
-    elseif ____switch87 == "Flee" then
-        goto ____switch87_case_4
-    elseif ____switch87 == "nil" then
-        goto ____switch87_case_5
+    local ____switch88 = orbwalkerMode
+    if ____switch88 == "Combo" then
+        goto ____switch88_case_0
+    elseif ____switch88 == "Harass" then
+        goto ____switch88_case_1
+    elseif ____switch88 == "Lasthit" then
+        goto ____switch88_case_2
+    elseif ____switch88 == "Waveclear" then
+        goto ____switch88_case_3
+    elseif ____switch88 == "Flee" then
+        goto ____switch88_case_4
+    elseif ____switch88 == "nil" then
+        goto ____switch88_case_5
     end
-    goto ____switch87_end
-    ::____switch87_case_0::
+    goto ____switch88_end
+    ::____switch88_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch87_end
+            goto ____switch88_end
         end
     end
-    ::____switch87_case_1::
+    ::____switch88_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch87_end
+            goto ____switch88_end
         end
     end
-    ::____switch87_case_2::
+    ::____switch88_case_2::
     do
         do
-            goto ____switch87_end
+            goto ____switch88_end
         end
     end
-    ::____switch87_case_3::
+    ::____switch88_case_3::
     do
         do
-            goto ____switch87_end
+            goto ____switch88_end
         end
     end
-    ::____switch87_case_4::
+    ::____switch88_case_4::
     do
         do
-            goto ____switch87_end
+            goto ____switch88_end
         end
     end
-    ::____switch87_case_5::
+    ::____switch88_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch87_end
+            goto ____switch88_end
         end
     end
-    ::____switch87_end::
+    ::____switch88_end::
 end
 if Player.CharName ~= "Orianna" then
     return false

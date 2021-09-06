@@ -295,12 +295,16 @@ function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
     spell.Target.IsHero &&
     spell.Target.IsAlly
   ) {
-    if (Menu.Get('eShieldSelf') && spell.Target.IsMe && E.CanCast(Player)) {
-      E.Cast(Player);
+    if (spell.Target.IsMe) {
+      if (Menu.Get('eShieldSelf') && E.CanCast(Player)) {
+        E.Cast(Player);
+      }
+      return;
     }
     const target = spell.Target.AsHero;
     if (Menu.Get('eShield' + target.CharName) && E.CanCast(target)) {
       E.Cast(target);
+      return;
     }
   }
 }
