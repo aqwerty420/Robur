@@ -154,6 +154,13 @@ function InitLog(): void {
 }
 
 function InitMenu(): void {
+  const enemies = ObjectManager.Get(AllyOrEnemy.Enemy, ObjectType.Heroes);
+  const allies = ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Heroes);
+  let enemiesCount = 0;
+  for (const [key, obj] of pairs(enemies)) {
+    enemiesCount++;
+  }
+  if (enemiesCount === 0) enemiesCount = 1;
   Menu.RegisterMenu('PoncheOrianna', 'PoncheOrianna', function () {
     Menu.NewTree('q', 'Q Options', function () {
       Menu.Checkbox('qCombo', 'Combo', true);
@@ -177,9 +184,7 @@ function InitMenu(): void {
       Menu.Checkbox('eKs', 'Kill Steal', true);
       Menu.Checkbox('eShieldSelf', 'Protect self', true);
       Menu.NewTree('eProtectList', 'Protect ally :', function () {
-        for (const [key, obj] of pairs(
-          ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Heroes)
-        )) {
+        for (const [key, obj] of pairs(allies)) {
           const ally = obj.AsHero;
           if (!obj.IsMe)
             Menu.Checkbox('eShield' + ally.CharName, ally.CharName, true);
@@ -195,14 +200,12 @@ function InitMenu(): void {
       Menu.Checkbox('eToR', 'E to R', true);
       Menu.Checkbox('qToR', 'Q to R', true);
       Menu.NewTree('eWaight', 'Enemy value :', function () {
-        for (const [key, obj] of pairs(
-          ObjectManager.Get(AllyOrEnemy.Enemy, ObjectType.Heroes)
-        )) {
+        for (const [key, obj] of pairs(enemies)) {
           const enemy = obj.AsHero;
           Menu.Slider('rWeight' + enemy.CharName, enemy.CharName, 1, 0, 3, 1);
         }
       });
-      Menu.Slider('rValue', 'Value to R', 1, 0, 15, 1);
+      Menu.Slider('rValue', 'Value to R', 1, 0, enemiesCount * 3, 1);
       //Menu.Checkbox('rCancel', 'Use to cancel spell', true);
       Menu.Checkbox('rBlock', 'Cancel if no hit', true);
       Menu.Checkbox('rDraw', 'Draw Range', true);
@@ -379,8 +382,9 @@ function tryE(enemies: AIHeroClient[]) {
 function getValuePos(enemies: AIHeroClient[], delay: number) {
   let count = 0;
   for (let i = 0; i < enemies.length; i++) {
-    if (IsInRange(enemies[i], rRadius, delay)) {
-      count++;
+    const enemy = enemies[i].AsHero;
+    if (IsInRange(enemy, rRadius, delay)) {
+      count += Menu.Get('rWeight' + enemy.CharName);
     }
   }
   return count;
@@ -396,8 +400,9 @@ function getBestER(
     let count = 0;
     const reachDelay = ballPosition.Distance(allies[i]) / eSpeed + baseDelay;
     for (let j = 0; j < enemies.length; j++) {
-      if (IsInRange(enemies[j], rRadius, reachDelay)) {
-        count++;
+      const enemy = enemies[j].AsHero;
+      if (IsInRange(enemy, rRadius, reachDelay)) {
+        count += Menu.Get('rWeight' + enemy.CharName);
       }
     }
     if (count > bestCount) {

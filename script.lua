@@ -212,61 +212,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch88 = orbwalkerMode
-    if ____switch88 == "Combo" then
-        goto ____switch88_case_0
-    elseif ____switch88 == "Harass" then
-        goto ____switch88_case_1
-    elseif ____switch88 == "Lasthit" then
-        goto ____switch88_case_2
-    elseif ____switch88 == "Waveclear" then
-        goto ____switch88_case_3
-    elseif ____switch88 == "Flee" then
-        goto ____switch88_case_4
-    elseif ____switch88 == "nil" then
-        goto ____switch88_case_5
+    local ____switch90 = orbwalkerMode
+    if ____switch90 == "Combo" then
+        goto ____switch90_case_0
+    elseif ____switch90 == "Harass" then
+        goto ____switch90_case_1
+    elseif ____switch90 == "Lasthit" then
+        goto ____switch90_case_2
+    elseif ____switch90 == "Waveclear" then
+        goto ____switch90_case_3
+    elseif ____switch90 == "Flee" then
+        goto ____switch90_case_4
+    elseif ____switch90 == "nil" then
+        goto ____switch90_case_5
     end
-    goto ____switch88_end
-    ::____switch88_case_0::
+    goto ____switch90_end
+    ::____switch90_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch88_end
+            goto ____switch90_end
         end
     end
-    ::____switch88_case_1::
+    ::____switch90_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch88_end
+            goto ____switch90_end
         end
     end
-    ::____switch88_case_2::
+    ::____switch90_case_2::
     do
         do
-            goto ____switch88_end
+            goto ____switch90_end
         end
     end
-    ::____switch88_case_3::
+    ::____switch90_case_3::
     do
         do
-            goto ____switch88_end
+            goto ____switch90_end
         end
     end
-    ::____switch88_case_4::
+    ::____switch90_case_4::
     do
         do
-            goto ____switch88_end
+            goto ____switch90_end
         end
     end
-    ::____switch88_case_5::
+    ::____switch90_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch88_end
+            goto ____switch90_end
         end
     end
-    ::____switch88_end::
+    ::____switch90_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -312,6 +312,15 @@ function InitLog()
     clean.module("PoncheOrianna", clean.seeall, log.setup)
 end
 function InitMenu()
+    local enemies = ObjectManager.Get("enemy", "heroes")
+    local allies = ObjectManager.Get("ally", "heroes")
+    local enemiesCount = 0
+    for key, obj in pairs(enemies) do
+        enemiesCount = enemiesCount + 1
+    end
+    if enemiesCount == 0 then
+        enemiesCount = 1
+    end
     Menu.RegisterMenu(
         "PoncheOrianna",
         "PoncheOrianna",
@@ -348,9 +357,7 @@ function InitMenu()
                         "eProtectList",
                         "Protect ally :",
                         function()
-                            for key, obj in pairs(
-                                ObjectManager.Get("ally", "heroes")
-                            ) do
+                            for key, obj in pairs(allies) do
                                 local ally = obj.AsHero
                                 if not obj.IsMe then
                                     Menu.Checkbox("eShield" .. ally.CharName, ally.CharName, true)
@@ -375,15 +382,13 @@ function InitMenu()
                         "eWaight",
                         "Enemy value :",
                         function()
-                            for key, obj in pairs(
-                                ObjectManager.Get("enemy", "heroes")
-                            ) do
+                            for key, obj in pairs(enemies) do
                                 local enemy = obj.AsHero
                                 Menu.Slider("rWeight" .. enemy.CharName, enemy.CharName, 1, 0, 3, 1)
                             end
                         end
                     )
-                    Menu.Slider("rValue", "Value to R", 1, 0, 15, 1)
+                    Menu.Slider("rValue", "Value to R", 1, 0, enemiesCount * 3, 1)
                     Menu.Checkbox("rBlock", "Cancel if no hit", true)
                     Menu.Checkbox("rDraw", "Draw Range", true)
                 end
@@ -417,8 +422,9 @@ function getValuePos(enemies, delay)
     do
         local i = 0
         while i < #enemies do
-            if IsInRange(enemies[i + 1], rRadius, delay) then
-                count = count + 1
+            local enemy = enemies[i + 1].AsHero
+            if IsInRange(enemy, rRadius, delay) then
+                count = count + Menu.Get("rWeight" .. enemy.CharName)
             end
             i = i + 1
         end
@@ -436,8 +442,9 @@ function getBestER(allies, enemies)
             do
                 local j = 0
                 while j < #enemies do
-                    if IsInRange(enemies[j + 1], rRadius, reachDelay) then
-                        count = count + 1
+                    local enemy = enemies[j + 1].AsHero
+                    if IsInRange(enemy, rRadius, reachDelay) then
+                        count = count + Menu.Get("rWeight" .. enemy.CharName)
                     end
                     j = j + 1
                 end
