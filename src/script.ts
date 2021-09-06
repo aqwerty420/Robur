@@ -151,7 +151,7 @@ function InitLog(): void {
 
 function InitMenu(): void {
   Menu.RegisterMenu(scriptName, scriptName, function () {
-    Menu.NewTree('a', 'Q Options', function () {
+    Menu.NewTree('q', 'Q Options', function () {
       Menu.Checkbox('qCombo', 'Combo', true);
       Menu.Checkbox('qHarass', 'Harass', true);
       //Menu.Checkbox('eToQ', 'E to Q', true);
@@ -266,9 +266,9 @@ function OnCastSpell(args: OnCastSpellArgs): void {
 
 function IsInRange(enemy: AIHeroClient, range: number, delay = 0): boolean {
   if (enemy.Position.Distance(ballPosition) > range) return false;
-  let pos = enemy.Position;
-  if (delay > 0) pos = enemy.FastPrediction(delay);
-  return pos.Distance(ballPosition) <= range;
+  if (delay === 0) return true;
+  const enemyPos = enemy.FastPrediction(delay);
+  return enemyPos.Distance(ballPosition) <= range;
 }
 
 function OnDraw(): void {

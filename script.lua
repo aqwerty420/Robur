@@ -75,11 +75,11 @@ function IsInRange(enemy, range, delay)
     if enemy.Position:Distance(ballPosition) > range then
         return false
     end
-    local pos = enemy.Position
-    if delay > 0 then
-        pos = enemy:FastPrediction(delay)
+    if delay == 0 then
+        return true
     end
-    return pos:Distance(ballPosition) <= range
+    local enemyPos = enemy:FastPrediction(delay)
+    return enemyPos:Distance(ballPosition) <= range
 end
 function OnDraw()
     if Menu.Get("ballDraw") and (not ballMoving) then
@@ -299,7 +299,7 @@ function InitMenu()
         scriptName,
         function()
             Menu.NewTree(
-                "a",
+                "q",
                 "Q Options",
                 function()
                     Menu.Checkbox("qCombo", "Combo", true)
