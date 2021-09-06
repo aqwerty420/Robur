@@ -292,6 +292,7 @@ function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
     !ballMoving &&
     spell.Target &&
     source.IsEnemy &&
+    source.IsHero &&
     spell.Target.IsHero &&
     spell.Target.IsAlly
   ) {
