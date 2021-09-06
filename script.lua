@@ -16,7 +16,7 @@ function GetValidNearbyHeroes(team)
         ObjectManager.GetNearby(team, "heroes")
     ) do
         if TargetSelector:IsValidTarget(obj) then
-            __TS__ArrayPush(heroes, obj)
+            __TS__ArrayPush(heroes, obj.AsHero)
         end
     end
     return heroes
@@ -47,11 +47,11 @@ function OnCreateObject(obj)
         ballMoving = true
         return
     end
-    if not IsBall(obj) then
+    if IsBall(obj) then
+        ballMoving = false
+        ballPosition = obj.Position
         return
     end
-    ballMoving = false
-    ballPosition = obj.Position
 end
 function OnCastSpell(args)
     if (args.Slot == SpellSlots.R) and Menu.Get("rCancel") then
@@ -68,6 +68,17 @@ function OnCastSpell(args)
         args.Process = false
     end
 end
+function OnProcessSpell(source, spell)
+    if ((((not ballMoving) and spell.Target) and source.IsEnemy) and spell.Target.IsHero) and spell.Target.IsAlly then
+        if (Menu.Get("eShieldSelf") and spell.Target.IsMe) and E:CanCast(Player) then
+            E:Cast(Player)
+        end
+        local target = spell.Target.AsHero
+        if Menu.Get("eShield" .. target.CharName) and E:CanCast(target) then
+            E:Cast(target)
+        end
+    end
+end
 function IsInRange(enemy, range, delay)
     if delay == nil then
         delay = 0
@@ -82,8 +93,12 @@ function IsInRange(enemy, range, delay)
     return enemyPos:Distance(ballPosition) <= range
 end
 function OnDraw()
+    local drawBallPos = Geometry.Vector(ballPosition)
+    local t = Core.Game.GetTime() % 0.8
+    drawBallPos.y = drawBallPos.y + 100
+    drawBallPos.y = drawBallPos.y + (((t < 0.4) and (function() return -50 * t end)) or (function() return -(20 - ((t - 0.4) * 50)) end))()
     if Menu.Get("ballDraw") and (not ballMoving) then
-        Core.Renderer.DrawCircle3D(ballPosition, 100, 10)
+        Core.Renderer.DrawCircle3D(drawBallPos, 100, 10)
     end
 end
 function tryQ(enemies)
@@ -193,61 +208,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch78 = orbwalkerMode
-    if ____switch78 == "Combo" then
-        goto ____switch78_case_0
-    elseif ____switch78 == "Harass" then
-        goto ____switch78_case_1
-    elseif ____switch78 == "Lasthit" then
-        goto ____switch78_case_2
-    elseif ____switch78 == "Waveclear" then
-        goto ____switch78_case_3
-    elseif ____switch78 == "Flee" then
-        goto ____switch78_case_4
-    elseif ____switch78 == "nil" then
-        goto ____switch78_case_5
+    local ____switch87 = orbwalkerMode
+    if ____switch87 == "Combo" then
+        goto ____switch87_case_0
+    elseif ____switch87 == "Harass" then
+        goto ____switch87_case_1
+    elseif ____switch87 == "Lasthit" then
+        goto ____switch87_case_2
+    elseif ____switch87 == "Waveclear" then
+        goto ____switch87_case_3
+    elseif ____switch87 == "Flee" then
+        goto ____switch87_case_4
+    elseif ____switch87 == "nil" then
+        goto ____switch87_case_5
     end
-    goto ____switch78_end
-    ::____switch78_case_0::
+    goto ____switch87_end
+    ::____switch87_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch78_end
+            goto ____switch87_end
         end
     end
-    ::____switch78_case_1::
+    ::____switch87_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch78_end
+            goto ____switch87_end
         end
     end
-    ::____switch78_case_2::
+    ::____switch87_case_2::
     do
         do
-            goto ____switch78_end
+            goto ____switch87_end
         end
     end
-    ::____switch78_case_3::
+    ::____switch87_case_3::
     do
         do
-            goto ____switch78_end
+            goto ____switch87_end
         end
     end
-    ::____switch78_case_4::
+    ::____switch87_case_4::
     do
         do
-            goto ____switch78_end
+            goto ____switch87_end
         end
     end
-    ::____switch78_case_5::
+    ::____switch87_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch78_end
+            goto ____switch87_end
         end
     end
-    ::____switch78_end::
+    ::____switch87_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -287,7 +302,7 @@ W = SpellLib.Active({Slot = SpellSlots.W, Range = 0, Speed = mathHuge, Delay = b
 E = SpellLib.Targeted({Slot = SpellSlots.E, Range = 1120, Speed = eSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = collisions})
 R = SpellLib.Active({Slot = SpellSlots.R, Range = 0, Speed = mathHuge, Delay = rDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
 QR = SpellLib.Skillshot({Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
-events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}}
+events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}}
 function InitLog()
     module("PoncheOrianna", package.seeall, log.setup)
     clean.module("PoncheOrianna", clean.seeall, log.setup)
@@ -324,10 +339,23 @@ function InitMenu()
                     Menu.Checkbox("eCombo", "Combo", true)
                     Menu.Checkbox("eHarass", "Harass", false)
                     Menu.Checkbox("eKs", "Kill Steal", true)
-                    Menu.Checkbox("eAuto", "Auto (Protect from dmg)", true)
                     Menu.Checkbox("eShieldSelf", "Protect self", true)
+                    Menu.NewTree(
+                        "eProtectList",
+                        "Protect ally :",
+                        function()
+                            for key, obj in pairs(
+                                ObjectManager.Get("ally", "heroes")
+                            ) do
+                                local ally = obj.AsHero
+                                if not obj.IsMe then
+                                    Menu.Checkbox("eShield" .. ally.CharName, ally.CharName, true)
+                                end
+                            end
+                        end
+                    )
                     Menu.Checkbox("eShieldAllies", "Protect allies", true)
-                    Menu.Checkbox("eDraw", "Draw Range", true)
+                    Menu.Checkbox("eDraw", "Draw Range", false)
                 end
             )
             Menu.NewTree(
@@ -339,6 +367,19 @@ function InitMenu()
                     Menu.Checkbox("rAuto", "Auto", true)
                     Menu.Checkbox("eToR", "E to R", true)
                     Menu.Checkbox("qToR", "Q to R", true)
+                    Menu.NewTree(
+                        "eWaight",
+                        "Enemy value :",
+                        function()
+                            for key, obj in pairs(
+                                ObjectManager.Get("enemy", "heroes")
+                            ) do
+                                local enemy = obj.AsHero
+                                Menu.Slider("rWeight" .. enemy.CharName, enemy.CharName, 1, 0, 3, 1)
+                            end
+                        end
+                    )
+                    Menu.Slider("rValue", "Value to R", 1, 0, 15, 1)
                     Menu.Checkbox("rBlock", "Cancel if no hit", true)
                     Menu.Checkbox("rDraw", "Draw Range", true)
                 end

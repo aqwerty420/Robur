@@ -5,8 +5,7 @@ Enemy Spell Cancel
 E to Q
 KS
 R Logic
-E Logic
-Enemy weight for R (value to R + value for each enemy)
+E Protect (check if hit time < ball reach time)
 Initiator (Cast E on dashing ally to R)
 Spell Lane Clear
 Spell Last Hit + Tear farm
@@ -139,6 +138,10 @@ const events: EventToRegister[] = [
     id: Events.OnCastSpell,
     callback: OnCastSpell,
   },
+  {
+    id: Events.OnProcessSpell,
+    callback: OnProcessSpell,
+  },
 ];
 
 function InitLog(): void {
@@ -172,10 +175,18 @@ function InitMenu(): void {
       Menu.Checkbox('eHarass', 'Harass', false);
       //Menu.Checkbox('eFlee', 'Flee', true);
       Menu.Checkbox('eKs', 'Kill Steal', true);
-      Menu.Checkbox('eAuto', 'Auto (Protect from dmg)', true);
       Menu.Checkbox('eShieldSelf', 'Protect self', true);
+      Menu.NewTree('eProtectList', 'Protect ally :', function () {
+        for (const [key, obj] of pairs(
+          ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Heroes)
+        )) {
+          const ally = obj.AsHero;
+          if (!obj.IsMe)
+            Menu.Checkbox('eShield' + ally.CharName, ally.CharName, true);
+        }
+      });
       Menu.Checkbox('eShieldAllies', 'Protect allies', true);
-      Menu.Checkbox('eDraw', 'Draw Range', true);
+      Menu.Checkbox('eDraw', 'Draw Range', false);
     });
     Menu.NewTree('r', 'R Options', function () {
       Menu.Checkbox('rCombo', 'Combo', true);
@@ -183,6 +194,15 @@ function InitMenu(): void {
       Menu.Checkbox('rAuto', 'Auto', true);
       Menu.Checkbox('eToR', 'E to R', true);
       Menu.Checkbox('qToR', 'Q to R', true);
+      Menu.NewTree('eWaight', 'Enemy value :', function () {
+        for (const [key, obj] of pairs(
+          ObjectManager.Get(AllyOrEnemy.Enemy, ObjectType.Heroes)
+        )) {
+          const enemy = obj.AsHero;
+          Menu.Slider('rWeight' + enemy.CharName, enemy.CharName, 1, 0, 3, 1);
+        }
+      });
+      Menu.Slider('rValue', 'Value to R', 1, 0, 15, 1);
       //Menu.Checkbox('rCancel', 'Use to cancel spell', true);
       Menu.Checkbox('rBlock', 'Cancel if no hit', true);
       Menu.Checkbox('rDraw', 'Draw Range', true);
@@ -220,7 +240,7 @@ function GetValidNearbyHeroes(team: AllyOrEnemy): AIHeroClient[] {
   for (const [key, obj] of pairs(
     ObjectManager.GetNearby(team, ObjectType.Heroes)
   )) {
-    if (TargetSelector.IsValidTarget(obj)) heroes.push(obj as AIHeroClient);
+    if (TargetSelector.IsValidTarget(obj)) heroes.push(obj.AsHero);
   }
   return heroes;
 }
@@ -248,9 +268,11 @@ function OnCreateObject(obj: GameObject): void {
     ballMoving = true;
     return;
   }
-  if (!IsBall(obj)) return;
-  ballMoving = false;
-  ballPosition = obj.Position;
+  if (IsBall(obj)) {
+    ballMoving = false;
+    ballPosition = obj.Position;
+    return;
+  }
 }
 
 function OnCastSpell(args: OnCastSpellArgs): void {
@@ -265,6 +287,24 @@ function OnCastSpell(args: OnCastSpellArgs): void {
   }
 }
 
+function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
+  if (
+    !ballMoving &&
+    spell.Target &&
+    source.IsEnemy &&
+    spell.Target.IsHero &&
+    spell.Target.IsAlly
+  ) {
+    if (Menu.Get('eShieldSelf') && spell.Target.IsMe && E.CanCast(Player)) {
+      E.Cast(Player);
+    }
+    const target = spell.Target.AsHero;
+    if (Menu.Get('eShield' + target.CharName) && E.CanCast(target)) {
+      E.Cast(target);
+    }
+  }
+}
+
 function IsInRange(enemy: AIHeroClient, range: number, delay = 0): boolean {
   if (enemy.Position.Distance(ballPosition) > range) return false;
   if (delay === 0) return true;
@@ -273,14 +313,13 @@ function IsInRange(enemy: AIHeroClient, range: number, delay = 0): boolean {
 }
 
 function OnDraw(): void {
-  /*
   const drawBallPos = Geometry.Vector(ballPosition);
   const t = Core.Game.GetTime() % 0.8;
   drawBallPos.y += 100;
-  drawBallPos.y += t < 0.4 ? 50.0 * t : -(20.0 - (t - 0.4) * 50.0);
-  */
+  drawBallPos.y += t < 0.4 ? -50.0 * t : -(20.0 - (t - 0.4) * 50.0);
+
   if (Menu.Get('ballDraw') && !ballMoving) {
-    Core.Renderer.DrawCircle3D(ballPosition, 100, 10);
+    Core.Renderer.DrawCircle3D(drawBallPos, 100, 10);
   }
 }
 
