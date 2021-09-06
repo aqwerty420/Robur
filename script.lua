@@ -69,7 +69,7 @@ function OnCastSpell(args)
     end
 end
 function OnProcessSpell(source, spell)
-    if (((((not ballMoving) and spell.Target) and source.IsEnemy) and source.IsHero) and spell.Target.IsHero) and spell.Target.IsAlly then
+    if ((((((not ballMoving) and spell.Target) and source.IsEnemy) and source.IsHero) and (not spell.IsBasicAttack)) and spell.Target.IsHero) and spell.Target.IsAlly then
         if spell.Target.IsMe then
             if Menu.Get("eShieldSelf") and E:CanCast(Player) then
                 E:Cast(Player)

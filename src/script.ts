@@ -293,6 +293,7 @@ function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
     spell.Target &&
     source.IsEnemy &&
     source.IsHero &&
+    !spell.IsBasicAttack &&
     spell.Target.IsHero &&
     spell.Target.IsAlly
   ) {
