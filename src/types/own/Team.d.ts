@@ -2,7 +2,7 @@
 
 declare const enum AllyOrEnemy {
   Ally = 'ally',
-  enemy = 'enemy',
+  Enemy = 'enemy',
 }
 
 declare const enum OtherTeam {

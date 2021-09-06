@@ -254,7 +254,7 @@ function OnCreateObject(obj: GameObject): void {
 
 function OnCastSpell(args: OnCastSpellArgs): void {
   if (args.Slot === SpellSlots.R && Menu.Get('rCancel')) {
-    const enemies = GetValidNearbyHeroes(AllyOrEnemy.enemy);
+    const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
     for (let i = 0; i < enemies.length; i++) {
       if (IsInRange(enemies[i], rRadius, rDelay)) {
         return;
@@ -411,7 +411,7 @@ function OnTick(): void {
   )
     return;
 
-  const enemies = GetValidNearbyHeroes(AllyOrEnemy.enemy);
+  const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
 
   if (enemies.length === 0) return;
 
