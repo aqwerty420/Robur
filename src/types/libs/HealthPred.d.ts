@@ -24,6 +24,6 @@ interface HealthPred {
   GetKillstealHealth(
     Target: AIHeroClient,
     Time: number,
-    DmgType: number
+    DmgType: keyof Enum_DamageTypes
   ): number;
 }

@@ -7,9 +7,9 @@ interface SpellBase {
   GetLevel(): number;
   GetName(): string;
   /**
-   * Enum_SpellStates
+   * @returns Enum_SpellStates
    */
-  GetState(): number;
+  GetState(): keyof Enum_SpellStates;
   GetToggleState(): number;
   GetManaCost(): number;
   GetCurrentAmmo(): number;
@@ -41,7 +41,10 @@ interface Skillshot extends SpellBase {
   /**
    * @param minHitChance Enums_HitChance
    */
-  CastOnHitChance(target: AIBaseClient, minHitChance: number): boolean;
+  CastOnHitChance(
+    target: AIBaseClient,
+    minHitChance: keyof Enums_HitChance
+  ): boolean;
   GetBestLinearCastPos(
     targets: Vector[] | AIBaseClient[]
   ): LuaMultiReturn<[Vector, number]>;
@@ -55,7 +58,7 @@ interface Skillshot extends SpellBase {
   GetDamage(this: void, target: AIBaseClient, stage?: string): number;
   GetHealthPred(this: void, target: AIBaseClient): number;
   /**
-   * @return Current health + shield + yasuo passive etc
+   * @returns Current health + shield + yasuo passive etc
    */
   GetKillstealHealth(this: void, target: AIHeroClient): number;
 }
@@ -87,7 +90,7 @@ interface Chargeable extends Skillshot {
   ReleaseOnHitChance(
     this: void,
     target: AIBaseClient,
-    minHitChance: number
+    minHitChance: keyof Enums_HitChance
   ): boolean;
   /**
    * Instant cast the spell at min range towards position or target prediction

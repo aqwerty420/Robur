@@ -11,5 +11,5 @@ interface Nav {
   /**
    * @returns Team="Order"|"Chaos"|"Neutral", Area="Base"|"TopLane"|"MidLane"|"BotLane"|"TopJungle"|"BotJungle"|"TopRiver"|"BotRiver"|"DragonPit"|"BaronPit"
    */
-  GetMapArea(pos: Vector): LuaTable<TeamOrArea, Enum_Teams | Area>;
+  GetMapArea(pos: Vector): LuaTable<TeamOrArea, keyof Enum_Teams | Area>;
 }

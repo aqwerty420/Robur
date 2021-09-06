@@ -1,3 +1,5 @@
+// OWN
+
 interface OnCastSpellArgs {
   Process: boolean;
   Slot: number;

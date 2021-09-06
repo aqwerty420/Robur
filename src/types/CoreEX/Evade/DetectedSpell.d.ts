@@ -1,9 +1,9 @@
 interface DetectedSpell {
   GetName(): string;
   /**
-   * @param Enum_SpellSlots
+   * @return Enum_SpellSlots
    */
-  GetSlot(): number;
+  GetSlot(): keyof Enum_SpellSlots;
   GetCaster(): AIBaseClient | null;
   /**
    * @returns "Ring", "Circle", "Line", "MissileLine", "Cone", "MissileCone", "Arc"

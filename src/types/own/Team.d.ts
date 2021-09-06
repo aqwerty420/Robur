@@ -1,14 +1,14 @@
 // OWN
 
 declare const enum AllyOrEnemy {
-  ally = 'ally',
+  Ally = 'ally',
   enemy = 'enemy',
 }
 
 declare const enum OtherTeam {
-  all = 'all',
-  neutral = 'neutral',
-  no_team = 'no_team',
+  All = 'all',
+  Neutral = 'neutral',
+  NoTeam = 'no_team',
 }
 
 type Team = AllyOrEnemy | OtherTeam;

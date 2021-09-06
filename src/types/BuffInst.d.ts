@@ -3,7 +3,7 @@ interface BuffInst {
   readonly Name: string;
   readonly Source: AIBaseClient;
   // Enum_BuffTypes
-  readonly BuffType: number;
+  readonly BuffType: keyof Enum_BuffTypes;
   readonly Count: number;
   readonly StartTime: number;
   readonly EndTime: number;

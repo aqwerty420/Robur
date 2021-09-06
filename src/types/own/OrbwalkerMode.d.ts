@@ -4,5 +4,5 @@ declare const enum OrbwalkerMode {
   Waveclear = 'Waveclear',
   Lasthit = 'Lasthit',
   Flee = 'Flee',
-  nil = 'nil',
+  Nil = 'nil',
 }

@@ -200,7 +200,7 @@ function InitEvents(): void {
 function RetrieveBallPosition(): void {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, obj] of pairs(
-    ObjectManager.Get(AllyOrEnemy.ally, ObjectType.minions)
+    ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Minions)
   )) {
     if (IsBall(obj)) {
       ballPosition = obj.Position;
@@ -217,7 +217,7 @@ function GetValidNearbyHeroes(team: AllyOrEnemy): AIHeroClient[] {
   const heroes: AIHeroClient[] = [];
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, obj] of pairs(
-    ObjectManager.GetNearby(team, ObjectType.heroes)
+    ObjectManager.GetNearby(team, ObjectType.Heroes)
   )) {
     if (TargetSelector.IsValidTarget(obj)) heroes.push(obj as AIHeroClient);
   }
@@ -398,7 +398,7 @@ function Harass(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
 }
 
 function OnTick(): void {
-  const allies = GetValidNearbyHeroes(AllyOrEnemy.ally);
+  const allies = GetValidNearbyHeroes(AllyOrEnemy.Ally);
   SetBallPosition(allies);
 
   if (
@@ -438,7 +438,7 @@ function OnTick(): void {
       //statements;
       break;
     }
-    case OrbwalkerMode.nil: {
+    case OrbwalkerMode.Nil: {
       Auto(allies, enemies);
       break;
     }

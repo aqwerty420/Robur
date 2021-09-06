@@ -56,7 +56,7 @@ interface GameObject {
    * table
    * @returns { Team="Order" | "Chaos" | "Neutral", Area="Base" | "TopLane" | "MidLane" | "BotLane" | "TopJungle" | "BotJungle" | "TopRiver" | "BotRiver" | "DragonPit" | "BaronPit" }
    */
-  readonly MapArea: LuaTable<TeamOrArea, Enum_Teams | Area>;
+  readonly MapArea: LuaTable<TeamOrArea, keyof Enum_Teams | Area>;
   /**
    * @"Order"|"Chaos"|"Neutral"
    */

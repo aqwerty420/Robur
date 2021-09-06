@@ -11,7 +11,7 @@ interface Game {
   /**
    * @return Enums_GameMaps
    */
-  GetMapID(): number;
+  GetMapID(): keyof Enums_GameMaps;
   GetGameMode(): GameMode;
   GetQueueType(): QueueType;
 }

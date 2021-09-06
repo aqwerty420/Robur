@@ -23,13 +23,13 @@ interface AIHeroClient extends AIBaseClient {
   /**
    * @param slot Enum_SpellSlots
    */
-  IsSpellEvolved(slot: number): boolean;
+  IsSpellEvolved(slot: keyof Enum_SpellSlots): boolean;
   /**
    * @param slot Enum_SpellSlots
    */
-  CanLevelSpell(slot: number): boolean;
+  CanLevelSpell(slot: keyof Enum_SpellSlots): boolean;
   /**
    * @param slot Enum_SpellSlots
    */
-  CanEvolveSpell(slot: number): boolean;
+  CanEvolveSpell(slot: keyof Enum_SpellSlots): boolean;
 }
