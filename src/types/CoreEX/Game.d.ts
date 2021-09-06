@@ -9,7 +9,7 @@ interface Game {
   IsRankedGame(): boolean;
   IsCustomGame(): boolean;
   /**
-   * @return Enums_GameMaps
+   * @returns Enums_GameMaps
    */
   GetMapID(): keyof Enums_GameMaps;
   GetGameMode(): GameMode;

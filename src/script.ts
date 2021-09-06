@@ -42,7 +42,6 @@ const Menu = Libs.NewMenu;
 const SpellLib = Libs.Spell;
 const TargetSelector = Libs.TargetSelector();
 
-const scriptName = 'PoncheOrianna';
 const ballSelfBuffName = 'orianaghostself';
 const ballAllyBuffName = 'orianaghost';
 const ballObjName = 'TheDoomBall';
@@ -145,14 +144,14 @@ const events: EventToRegister[] = [
 function InitLog(): void {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  module(scriptName, package.seeall, log.setup);
+  module('PoncheOrianna', package.seeall, log.setup);
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  clean.module(scriptName, clean.seeall, log.setup);
+  clean.module('PoncheOrianna', clean.seeall, log.setup);
 }
 
 function InitMenu(): void {
-  Menu.RegisterMenu(scriptName, scriptName, function () {
+  Menu.RegisterMenu('PoncheOrianna', 'PoncheOrianna', function () {
     Menu.NewTree('q', 'Q Options', function () {
       Menu.Checkbox('qCombo', 'Combo', true);
       Menu.Checkbox('qHarass', 'Harass', true);

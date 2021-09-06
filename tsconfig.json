@@ -14,7 +14,7 @@
     "noHeader": true,
     "noImplicitSelf": true,
     "luaLibImport": "inline",
-    "sourceMapTraceback": true,
+    //"sourceMapTraceback": true,
     //"buildMode": "default",
     //"luaBundleEntry": "src/script.ts",
     //"luaBundle": "output/script.lua"
