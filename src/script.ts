@@ -89,7 +89,7 @@ const W = SpellLib.Active({
   UseHitbox: false,
 });
 
-const E = SpellLib.Skillshot({
+const E = SpellLib.Targeted({
   Slot: SpellSlots.E,
   Range: 1120,
   Speed: eSpeed,
