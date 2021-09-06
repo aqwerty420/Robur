@@ -146,6 +146,8 @@ function InitLog(): void {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   module(scriptName, package.seeall, log.setup);
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   clean.module(scriptName, clean.seeall, log.setup);
 }
 

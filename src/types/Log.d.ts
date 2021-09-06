@@ -16,22 +16,18 @@ interface log {
 
 declare const log: log;
 
+/*
 interface package {
   seeall: any;
 }
 
 declare const package: package;
+*/
 
 /**
  * helper function to create local logging shortcuts (DEBUG, INFO, ...) passed as Parameter To 'module'.
  */
-declare function module(
-  this: void,
-  module: string,
-  seeal: any,
-  setup: any,
-  ...args: any[]
-): void;
+declare function module(this: void, ...args: any[]): void;
 
 interface clean {
   module(
@@ -44,4 +40,4 @@ interface clean {
   seeall: any;
 }
 
-declare const clean: clean;
+declare const clean: { module: (this: void, ...args: any[]) => void };

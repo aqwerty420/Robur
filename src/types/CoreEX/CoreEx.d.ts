@@ -8,6 +8,7 @@ interface CoreEx {
   readonly Renderer: Renderer;
   readonly EvadeAPI: Evade;
   readonly Game: Game;
+  readonly Nav: Nav;
   /**
    * 1. Put a ".version" file with the same name and path of your script at the git:
    *  https://robur.site/Thorn/Public/src/branch/master/UnrulyEzreal.lua

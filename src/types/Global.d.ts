@@ -20,7 +20,7 @@ declare const _G: Global;
 type OnLoadEvent = () => boolean;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare function print(this: void, ...args: any[]): void;
+declare function print(this: void, format: string, ...args: any[]): void;
 
 declare let OnLoad: OnLoadEvent;
 
