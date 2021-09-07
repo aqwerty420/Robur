@@ -3,7 +3,6 @@
 release:
 
 Harass mana slider
-Enemy Spell Cancel
 KS
 Flee (E + W)
 Finish Draw
@@ -17,6 +16,7 @@ Spell Last Hit + Tear farm
 
 maybe:
 
+Q + R Cancel
 Q AOE ball not on self
 QR ball not on self
 
@@ -150,6 +150,10 @@ const events: EventToRegister[] = [
     id: Events.OnProcessSpell,
     callback: OnProcessSpell,
   },
+  {
+    id: Events.OnInterruptibleSpell,
+    callback: OnInterruptibleSpell,
+  },
 ];
 
 function InitLog(): void {
@@ -170,14 +174,14 @@ function InitMenu(): void {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, obj] of pairs(enemies)) {
     const enemyName = obj.AsHero.CharName;
-    if (!enemiesName.includes(enemyName)) enemiesName.push(obj.AsHero.CharName);
+    if (!enemiesName.includes(enemyName)) enemiesName.push(enemyName);
     enemiesCount++;
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, obj] of pairs(allies)) {
     if (obj.IsMe) continue;
     const allyName = obj.AsHero.CharName;
-    if (!alliesName.includes(allyName)) alliesName.push(obj.AsHero.CharName);
+    if (!alliesName.includes(allyName)) alliesName.push(allyName);
   }
   if (enemiesCount === 0) enemiesCount = 1;
   Menu.RegisterMenu('PoncheOrianna', 'PoncheOrianna', function () {
@@ -214,6 +218,7 @@ function InitMenu(): void {
       Menu.Checkbox('rCombo', 'Combo', true);
       Menu.Checkbox('rKill', 'Kill Steal', true);
       Menu.Checkbox('rAuto', 'Auto', true);
+      Menu.Slider('rRadius', 'Radius', 390, 300, 415, 5);
       Menu.Checkbox('eToR', 'E to R', true);
       Menu.Checkbox('qToR', 'Q to R', true);
       Menu.NewTree('eWaight', 'Enemy value :', function () {
@@ -221,8 +226,22 @@ function InitMenu(): void {
           Menu.Slider('rWeight' + enemyName, enemyName, 1, 1, 3, 1);
         }
       });
-      Menu.Slider('rValue', 'Value to R', 1, 1, enemiesCount * 3, 1);
-      //Menu.Checkbox('rCancel', 'Use to cancel spell', true);
+      Menu.Slider('rValue', 'Value to cast', 1, 1, enemiesCount * 3, 1);
+      Menu.Checkbox('rCancel', 'Use to cancel spell', true);
+      Menu.NewTree('SpellToCancel', 'Spell to cancel :', function () {
+        Menu.Text(
+          'Even ticked a spell will be cancelled only if it is possible',
+          false
+        );
+        for (const enemyName of enemiesName) {
+          Menu.NewTree(enemyName + 'Cancel', enemyName + ' :', function () {
+            Menu.Checkbox(enemyName + 'CancelQ', 'Q', true);
+            Menu.Checkbox(enemyName + 'CancelW', 'W', true);
+            Menu.Checkbox(enemyName + 'CancelE', 'E', true);
+            Menu.Checkbox(enemyName + 'CancelR', 'R', true);
+          });
+        }
+      });
       Menu.Checkbox('rBlock', 'Cancel if no hit', true);
       Menu.Checkbox('rDraw', 'Draw Range', true);
     });
@@ -298,7 +317,7 @@ function OnCastSpell(args: OnCastSpellArgs): void {
   if (Menu.Get('rBlock') && args.Slot === SpellSlots.R) {
     const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
     for (let i = 0; i < enemies.length; i++) {
-      if (IsInRange(enemies[i], rRadius, ballPosition, rDelay)) {
+      if (IsInRange(enemies[i], Menu.Get('rRadius'), ballPosition, rDelay)) {
         return;
       }
     }
@@ -330,6 +349,46 @@ function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
   }
 }
 
+function IsToCancel(enemyName: string, slot: number) {
+  if (slot === SpellSlots.Q) {
+    return Menu.Get(enemyName + 'CancelQ');
+  }
+  if (slot === SpellSlots.W) {
+    return Menu.Get(enemyName + 'CancelW');
+  }
+  if (slot === SpellSlots.E) {
+    return Menu.Get(enemyName + 'CancelE');
+  }
+  if (slot === SpellSlots.R) {
+    return Menu.Get(enemyName + 'CancelR');
+  }
+}
+
+function OnInterruptibleSpell(
+  source: AIHeroClient,
+  spell: SpellCast,
+  danger: number,
+  endTime: number,
+  canMove: boolean
+) {
+  if (
+    Menu.Get('rCancel') &&
+    source.IsEnemy &&
+    source.IsHero &&
+    IsToCancel(source.CharName, spell.Slot) &&
+    ballPosition.Distance(source.Position) <= Menu.Get('rRadius')
+  ) {
+    if (!canMove) {
+      R.Cast();
+    } else if (
+      source.FastPrediction(rDelay).Distance(ballPosition) <=
+      Menu.Get('rRadius')
+    ) {
+      R.Cast();
+    }
+  }
+}
+
 function OnDraw(): void {
   const drawBallPos = Geometry.Vector(ballPosition);
   const t = Core.Game.GetTime() % 0.8;
@@ -357,7 +416,7 @@ function getValuePos(enemies: AIHeroClient[], delay: number) {
   let count = 0;
   for (let i = 0; i < enemies.length; i++) {
     const enemy = enemies[i].AsHero;
-    if (IsInRange(enemy, rRadius, ballPosition, delay)) {
+    if (IsInRange(enemy, Menu.Get('rRadius'), ballPosition, delay)) {
       count += Menu.Get('rWeight' + enemy.CharName);
     }
   }
@@ -426,9 +485,10 @@ function getBestER(
   for (let i = 0; i < allies.length; i++) {
     let count = 0;
     const reachDelay = ballPosition.Distance(allies[i]) / eSpeed + baseDelay;
+    const allyPosition = allies[i].FastPrediction(reachDelay);
     for (let j = 0; j < enemies.length; j++) {
       const enemy = enemies[j].AsHero;
-      if (IsInRange(enemy, rRadius, allies[i].Position, reachDelay)) {
+      if (IsInRange(enemy, Menu.Get('rRadius'), allyPosition, reachDelay)) {
         count += Menu.Get('rWeight' + enemy.CharName);
       }
     }
@@ -457,7 +517,7 @@ function getQR(
       if (
         IsInRange(
           enemy,
-          rRadius,
+          Menu.Get('rRadius'),
           castPos[0],
           baseDelay + ballPosition.Distance(castPos[0]) / qSpeed
         )

@@ -79,7 +79,12 @@ function OnCastSpell(args)
         do
             local i = 0
             while i < #enemies do
-                if IsInRange(enemies[i + 1], rRadius, ballPosition, rDelay) then
+                if IsInRange(
+                    enemies[i + 1],
+                    Menu.Get("rRadius"),
+                    ballPosition,
+                    rDelay
+                ) then
                     return
                 end
                 i = i + 1
@@ -100,6 +105,29 @@ function OnProcessSpell(source, spell)
         if Menu.Get("eShield" .. target.CharName) and E:CanCast(target) then
             E:Cast(target)
             return
+        end
+    end
+end
+function IsToCancel(enemyName, slot)
+    if slot == SpellSlots.Q then
+        return Menu.Get(enemyName .. "CancelQ")
+    end
+    if slot == SpellSlots.W then
+        return Menu.Get(enemyName .. "CancelW")
+    end
+    if slot == SpellSlots.E then
+        return Menu.Get(enemyName .. "CancelE")
+    end
+    if slot == SpellSlots.R then
+        return Menu.Get(enemyName .. "CancelR")
+    end
+end
+function OnInterruptibleSpell(source, spell, danger, endTime, canMove)
+    if (((Menu.Get("rCancel") and source.IsEnemy) and source.IsHero) and IsToCancel(source.CharName, spell.Slot)) and (ballPosition:Distance(source.Position) <= Menu.Get("rRadius")) then
+        if not canMove then
+            R:Cast()
+        elseif source:FastPrediction(rDelay):Distance(ballPosition) <= Menu.Get("rRadius") then
+            R:Cast()
         end
     end
 end
@@ -131,7 +159,12 @@ function getValuePos(enemies, delay)
         local i = 0
         while i < #enemies do
             local enemy = enemies[i + 1].AsHero
-            if IsInRange(enemy, rRadius, ballPosition, delay) then
+            if IsInRange(
+                enemy,
+                Menu.Get("rRadius"),
+                ballPosition,
+                delay
+            ) then
                 count = count + Menu.Get("rWeight" .. enemy.CharName)
             end
             i = i + 1
@@ -205,11 +238,17 @@ function getBestER(allies, enemies)
         while i < #allies do
             local count = 0
             local reachDelay = (ballPosition:Distance(allies[i + 1]) / eSpeed) + baseDelay
+            local allyPosition = allies[i + 1]:FastPrediction(reachDelay)
             do
                 local j = 0
                 while j < #enemies do
                     local enemy = enemies[j + 1].AsHero
-                    if IsInRange(enemy, rRadius, allies[i + 1].Position, reachDelay) then
+                    if IsInRange(
+                        enemy,
+                        Menu.Get("rRadius"),
+                        allyPosition,
+                        reachDelay
+                    ) then
                         count = count + Menu.Get("rWeight" .. enemy.CharName)
                     end
                     j = j + 1
@@ -239,7 +278,7 @@ function getQR(enemies)
                 local enemy = enemies[j + 1].AsHero
                 if IsInRange(
                     enemy,
-                    rRadius,
+                    Menu.Get("rRadius"),
                     castPos[1],
                     baseDelay + (ballPosition:Distance(castPos[1]) / qSpeed)
                 ) then
@@ -336,61 +375,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch107 = orbwalkerMode
-    if ____switch107 == "Combo" then
-        goto ____switch107_case_0
-    elseif ____switch107 == "Harass" then
-        goto ____switch107_case_1
-    elseif ____switch107 == "Lasthit" then
-        goto ____switch107_case_2
-    elseif ____switch107 == "Waveclear" then
-        goto ____switch107_case_3
-    elseif ____switch107 == "Flee" then
-        goto ____switch107_case_4
-    elseif ____switch107 == "nil" then
-        goto ____switch107_case_5
+    local ____switch119 = orbwalkerMode
+    if ____switch119 == "Combo" then
+        goto ____switch119_case_0
+    elseif ____switch119 == "Harass" then
+        goto ____switch119_case_1
+    elseif ____switch119 == "Lasthit" then
+        goto ____switch119_case_2
+    elseif ____switch119 == "Waveclear" then
+        goto ____switch119_case_3
+    elseif ____switch119 == "Flee" then
+        goto ____switch119_case_4
+    elseif ____switch119 == "nil" then
+        goto ____switch119_case_5
     end
-    goto ____switch107_end
-    ::____switch107_case_0::
+    goto ____switch119_end
+    ::____switch119_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch107_end
+            goto ____switch119_end
         end
     end
-    ::____switch107_case_1::
+    ::____switch119_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch107_end
+            goto ____switch119_end
         end
     end
-    ::____switch107_case_2::
+    ::____switch119_case_2::
     do
         do
-            goto ____switch107_end
+            goto ____switch119_end
         end
     end
-    ::____switch107_case_3::
+    ::____switch119_case_3::
     do
         do
-            goto ____switch107_end
+            goto ____switch119_end
         end
     end
-    ::____switch107_case_4::
+    ::____switch119_case_4::
     do
         do
-            goto ____switch107_end
+            goto ____switch119_end
         end
     end
-    ::____switch107_case_5::
+    ::____switch119_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch107_end
+            goto ____switch119_end
         end
     end
-    ::____switch107_end::
+    ::____switch119_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -430,7 +469,7 @@ W = SpellLib.Active({Slot = SpellSlots.W, Range = 0, Speed = mathHuge, Delay = b
 E = SpellLib.Targeted({Slot = SpellSlots.E, Range = 1120, Speed = eSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = collisions})
 R = SpellLib.Active({Slot = SpellSlots.R, Range = 0, Speed = mathHuge, Delay = rDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
 QR = SpellLib.Skillshot({Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
-events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}}
+events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}, {id = Events.OnInterruptibleSpell, callback = OnInterruptibleSpell}}
 function InitLog()
     module("PoncheOrianna", package.seeall, log.setup)
     clean.module("PoncheOrianna", clean.seeall, log.setup)
@@ -444,7 +483,7 @@ function InitMenu()
     for key, obj in pairs(enemies) do
         local enemyName = obj.AsHero.CharName
         if not __TS__ArrayIncludes(enemiesName, enemyName) then
-            __TS__ArrayPush(enemiesName, obj.AsHero.CharName)
+            __TS__ArrayPush(enemiesName, enemyName)
         end
         enemiesCount = enemiesCount + 1
     end
@@ -455,7 +494,7 @@ function InitMenu()
             end
             local allyName = obj.AsHero.CharName
             if not __TS__ArrayIncludes(alliesName, allyName) then
-                __TS__ArrayPush(alliesName, obj.AsHero.CharName)
+                __TS__ArrayPush(alliesName, allyName)
             end
         end
         ::__continue7::
@@ -515,6 +554,7 @@ function InitMenu()
                     Menu.Checkbox("rCombo", "Combo", true)
                     Menu.Checkbox("rKill", "Kill Steal", true)
                     Menu.Checkbox("rAuto", "Auto", true)
+                    Menu.Slider("rRadius", "Radius", 390, 300, 415, 5)
                     Menu.Checkbox("eToR", "E to R", true)
                     Menu.Checkbox("qToR", "Q to R", true)
                     Menu.NewTree(
@@ -526,7 +566,27 @@ function InitMenu()
                             end
                         end
                     )
-                    Menu.Slider("rValue", "Value to R", 1, 1, enemiesCount * 3, 1)
+                    Menu.Slider("rValue", "Value to cast", 1, 1, enemiesCount * 3, 1)
+                    Menu.Checkbox("rCancel", "Use to cancel spell", true)
+                    Menu.NewTree(
+                        "SpellToCancel",
+                        "Spell to cancel :",
+                        function()
+                            Menu.Text("Even ticked a spell will be cancelled only if it is possible", false)
+                            for ____, enemyName in ipairs(enemiesName) do
+                                Menu.NewTree(
+                                    enemyName .. "Cancel",
+                                    enemyName .. " :",
+                                    function()
+                                        Menu.Checkbox(enemyName .. "CancelQ", "Q", true)
+                                        Menu.Checkbox(enemyName .. "CancelW", "W", true)
+                                        Menu.Checkbox(enemyName .. "CancelE", "E", true)
+                                        Menu.Checkbox(enemyName .. "CancelR", "R", true)
+                                    end
+                                )
+                            end
+                        end
+                    )
                     Menu.Checkbox("rBlock", "Cancel if no hit", true)
                     Menu.Checkbox("rDraw", "Draw Range", true)
                 end
