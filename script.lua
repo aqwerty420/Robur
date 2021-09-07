@@ -492,7 +492,6 @@ function InitMenu()
                             for key, obj in pairs(enemies) do
                                 local enemy = obj.AsHero
                                 Menu.Slider("rWeight" .. enemy.CharName, enemy.CharName, 1, 1, 3, 1)
-                                break
                             end
                         end
                     )

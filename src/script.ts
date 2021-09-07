@@ -203,7 +203,6 @@ function InitMenu(): void {
         for (const [key, obj] of pairs(enemies)) {
           const enemy = obj.AsHero;
           Menu.Slider('rWeight' + enemy.CharName, enemy.CharName, 1, 1, 3, 1);
-          break;
         }
       });
       Menu.Slider('rValue', 'Value to R', 1, 1, enemiesCount * 3, 1);
