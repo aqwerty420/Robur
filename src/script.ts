@@ -193,10 +193,8 @@ function InitMenu(): void {
       Menu.Checkbox('eKs', 'Kill Steal', true);
       Menu.Checkbox('eShieldSelf', 'Protect self', true);
       Menu.NewTree('eProtectList', 'Protect ally :', function () {
-        for (const [key, obj] of pairs(allies)) {
-          const ally = obj.AsHero;
-          if (!obj.IsMe)
-            Menu.Checkbox('eShield' + ally.CharName, ally.CharName, true);
+        for (const allyName of alliesName) {
+          Menu.Checkbox('eShield' + allyName, allyName, true);
         }
       });
       Menu.Checkbox('eShieldAllies', 'Protect allies', true);

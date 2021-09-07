@@ -339,61 +339,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch108 = orbwalkerMode
-    if ____switch108 == "Combo" then
-        goto ____switch108_case_0
-    elseif ____switch108 == "Harass" then
-        goto ____switch108_case_1
-    elseif ____switch108 == "Lasthit" then
-        goto ____switch108_case_2
-    elseif ____switch108 == "Waveclear" then
-        goto ____switch108_case_3
-    elseif ____switch108 == "Flee" then
-        goto ____switch108_case_4
-    elseif ____switch108 == "nil" then
-        goto ____switch108_case_5
+    local ____switch107 = orbwalkerMode
+    if ____switch107 == "Combo" then
+        goto ____switch107_case_0
+    elseif ____switch107 == "Harass" then
+        goto ____switch107_case_1
+    elseif ____switch107 == "Lasthit" then
+        goto ____switch107_case_2
+    elseif ____switch107 == "Waveclear" then
+        goto ____switch107_case_3
+    elseif ____switch107 == "Flee" then
+        goto ____switch107_case_4
+    elseif ____switch107 == "nil" then
+        goto ____switch107_case_5
     end
-    goto ____switch108_end
-    ::____switch108_case_0::
+    goto ____switch107_end
+    ::____switch107_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch108_end
+            goto ____switch107_end
         end
     end
-    ::____switch108_case_1::
+    ::____switch107_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch108_end
+            goto ____switch107_end
         end
     end
-    ::____switch108_case_2::
+    ::____switch107_case_2::
     do
         do
-            goto ____switch108_end
+            goto ____switch107_end
         end
     end
-    ::____switch108_case_3::
+    ::____switch107_case_3::
     do
         do
-            goto ____switch108_end
+            goto ____switch107_end
         end
     end
-    ::____switch108_case_4::
+    ::____switch107_case_4::
     do
         do
-            goto ____switch108_end
+            goto ____switch107_end
         end
     end
-    ::____switch108_case_5::
+    ::____switch107_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch108_end
+            goto ____switch107_end
         end
     end
-    ::____switch108_end::
+    ::____switch107_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -502,11 +502,8 @@ function InitMenu()
                         "eProtectList",
                         "Protect ally :",
                         function()
-                            for key, obj in pairs(allies) do
-                                local ally = obj.AsHero
-                                if not obj.IsMe then
-                                    Menu.Checkbox("eShield" .. ally.CharName, ally.CharName, true)
-                                end
+                            for ____, allyName in ipairs(alliesName) do
+                                Menu.Checkbox("eShield" .. allyName, allyName, true)
                             end
                         end
                     )
