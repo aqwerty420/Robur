@@ -54,12 +54,12 @@ function OnCreateObject(obj)
     end
 end
 function OnCastSpell(args)
-    if (args.Slot == SpellSlots.R) and Menu.Get("rCancel") then
+    if Menu.Get("rBlock") and (args.Slot == SpellSlots.R) then
         local enemies = GetValidNearbyHeroes("enemy")
         do
             local i = 0
             while i < #enemies do
-                if IsInRange(enemies[i + 1], rRadius, rDelay) then
+                if IsInRange(enemies[i + 1], rRadius, ballPosition, rDelay) then
                     return
                 end
                 i = i + 1
@@ -69,7 +69,7 @@ function OnCastSpell(args)
     end
 end
 function OnProcessSpell(source, spell)
-    if ((((((not ballMoving) and spell.Target) and source.IsEnemy) and source.IsHero) and (not spell.IsBasicAttack)) and spell.Target.IsHero) and spell.Target.IsAlly then
+    if ((((((not ballMoving) and source.IsEnemy) and source.IsHero) and spell.Target) and (not spell.IsBasicAttack)) and spell.Target.IsHero) and spell.Target.IsAlly then
         if spell.Target.IsMe then
             if Menu.Get("eShieldSelf") and E:CanCast(Player) then
                 E:Cast(Player)
@@ -83,19 +83,6 @@ function OnProcessSpell(source, spell)
         end
     end
 end
-function IsInRange(enemy, range, delay)
-    if delay == nil then
-        delay = 0
-    end
-    if enemy.Position:Distance(ballPosition) > range then
-        return false
-    end
-    if delay == 0 then
-        return true
-    end
-    local enemyPos = enemy:FastPrediction(delay)
-    return enemyPos:Distance(ballPosition) <= range
-end
 function OnDraw()
     local drawBallPos = Geometry.Vector(ballPosition)
     local t = Core.Game.GetTime() % 0.8
@@ -104,6 +91,33 @@ function OnDraw()
     if Menu.Get("ballDraw") and (not ballMoving) then
         Core.Renderer.DrawCircle3D(drawBallPos, 100, 10)
     end
+end
+function IsInRange(enemy, range, position, delay)
+    if delay == nil then
+        delay = 0
+    end
+    if enemy.Position:Distance(position) > range then
+        return false
+    end
+    if delay == 0 then
+        return true
+    end
+    local enemyPos = enemy:FastPrediction(delay)
+    return enemyPos:Distance(position) <= range
+end
+function getValuePos(enemies, delay)
+    local count = 0
+    do
+        local i = 0
+        while i < #enemies do
+            local enemy = enemies[i + 1].AsHero
+            if IsInRange(enemy, rRadius, ballPosition, delay) then
+                count = count + Menu.Get("rWeight" .. enemy.CharName)
+            end
+            i = i + 1
+        end
+    end
+    return count
 end
 function tryQ(enemies)
     if (not Q:IsReady()) or (Q:GetManaCost() > Player.Mana) then
@@ -134,7 +148,7 @@ function tryW(enemies)
     do
         local i = 0
         while i < #enemies do
-            if IsInRange(enemies[i + 1], wRadius, baseDelay) then
+            if IsInRange(enemies[i + 1], wRadius, ballPosition, baseDelay) then
                 return W:Cast()
             end
             i = i + 1
@@ -160,7 +174,95 @@ function tryE(enemies)
     end
     return false
 end
+function getBestER(allies, enemies)
+    if ((not Menu.Get("eToR")) or (not E:IsReady())) or ((E:GetManaCost() + R:GetManaCost()) > Player.Mana) then
+        return nil, 0
+    end
+    local ally = nil
+    local bestCount = 0
+    do
+        local i = 0
+        while i < #allies do
+            local count = 0
+            local reachDelay = (ballPosition:Distance(allies[i + 1]) / eSpeed) + baseDelay
+            do
+                local j = 0
+                while j < #enemies do
+                    local enemy = enemies[j + 1].AsHero
+                    if IsInRange(enemy, rRadius, allies[i + 1].Position, reachDelay) then
+                        count = count + Menu.Get("rWeight" .. enemy.CharName)
+                    end
+                    j = j + 1
+                end
+            end
+            if count > bestCount then
+                bestCount = count
+                ally = allies[i + 1]
+            end
+            i = i + 1
+        end
+    end
+    return ally, bestCount
+end
+function getQR(enemies)
+    if ((not Menu.Get("qToR")) or (not Q:IsReady())) or ((Q:GetManaCost() + R:GetManaCost()) > Player.Mana) then
+        return nil, 0
+    end
+    local count = 0
+    if ballOnSelf then
+        local castPos = {
+            QR:GetBestCircularCastPos(enemies)
+        }
+        do
+            local j = 0
+            while j < #enemies do
+                local enemy = enemies[j + 1].AsHero
+                if IsInRange(
+                    enemy,
+                    rRadius,
+                    castPos[1],
+                    baseDelay + (ballPosition:Distance(castPos[1]) / qSpeed)
+                ) then
+                    count = count + Menu.Get("rWeight" .. enemy.CharName)
+                end
+                j = j + 1
+            end
+        end
+        return castPos[1], count
+    end
+    return nil, 0
+end
+function tryR(allies, enemies)
+    if (not R.IsReady) or (R:GetManaCost() > Player.Mana) then
+        return false
+    end
+    local rResult = getValuePos(enemies, rDelay)
+    local qrResult = {
+        getQR(enemies)
+    }
+    local erResult = {
+        getBestER(allies, enemies)
+    }
+    print(
+        tostring(erResult[2])
+    )
+    if ((rResult >= Menu.Get("rValue")) and (rResult >= qrResult[2])) and (rResult >= erResult[2]) then
+        return R:Cast()
+    end
+    if (erResult[2] >= Menu.Get("rValue")) and (erResult[2] >= qrResult[2]) then
+        return E:Cast(erResult[1])
+    end
+    if qrResult[2] >= Menu.Get("rValue") then
+        return Q:Cast(qrResult[1])
+    end
+    return false
+end
 function Auto(allies, enemies)
+    if Menu.Get("rAuto") then
+        if tryR(allies, enemies) then
+            return
+        end
+    end
     if Menu.Get("wAuto") then
         if tryW(enemies) then
             return
@@ -168,6 +270,11 @@ function Auto(allies, enemies)
     end
 end
 function Combo(allies, enemies)
+    if Menu.Get("rCombo") then
+        if tryR(allies, enemies) then
+            return
+        end
+    end
     if Menu.Get("qCombo") then
         if tryQ(enemies) then
             return
@@ -212,61 +319,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch90 = orbwalkerMode
-    if ____switch90 == "Combo" then
-        goto ____switch90_case_0
-    elseif ____switch90 == "Harass" then
-        goto ____switch90_case_1
-    elseif ____switch90 == "Lasthit" then
-        goto ____switch90_case_2
-    elseif ____switch90 == "Waveclear" then
-        goto ____switch90_case_3
-    elseif ____switch90 == "Flee" then
-        goto ____switch90_case_4
-    elseif ____switch90 == "nil" then
-        goto ____switch90_case_5
+    local ____switch104 = orbwalkerMode
+    if ____switch104 == "Combo" then
+        goto ____switch104_case_0
+    elseif ____switch104 == "Harass" then
+        goto ____switch104_case_1
+    elseif ____switch104 == "Lasthit" then
+        goto ____switch104_case_2
+    elseif ____switch104 == "Waveclear" then
+        goto ____switch104_case_3
+    elseif ____switch104 == "Flee" then
+        goto ____switch104_case_4
+    elseif ____switch104 == "nil" then
+        goto ____switch104_case_5
     end
-    goto ____switch90_end
-    ::____switch90_case_0::
+    goto ____switch104_end
+    ::____switch104_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch90_end
+            goto ____switch104_end
         end
     end
-    ::____switch90_case_1::
+    ::____switch104_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch90_end
+            goto ____switch104_end
         end
     end
-    ::____switch90_case_2::
+    ::____switch104_case_2::
     do
         do
-            goto ____switch90_end
+            goto ____switch104_end
         end
     end
-    ::____switch90_case_3::
+    ::____switch104_case_3::
     do
         do
-            goto ____switch90_end
+            goto ____switch104_end
         end
     end
-    ::____switch90_case_4::
+    ::____switch104_case_4::
     do
         do
-            goto ____switch90_end
+            goto ____switch104_end
         end
     end
-    ::____switch90_case_5::
+    ::____switch104_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch90_end
+            goto ____switch104_end
         end
     end
-    ::____switch90_end::
+    ::____switch104_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -384,11 +491,12 @@ function InitMenu()
                         function()
                             for key, obj in pairs(enemies) do
                                 local enemy = obj.AsHero
-                                Menu.Slider("rWeight" .. enemy.CharName, enemy.CharName, 1, 0, 3, 1)
+                                Menu.Slider("rWeight" .. enemy.CharName, enemy.CharName, 1, 1, 3, 1)
+                                break
                             end
                         end
                     )
-                    Menu.Slider("rValue", "Value to R", 1, 0, enemiesCount * 3, 1)
+                    Menu.Slider("rValue", "Value to R", 1, 1, enemiesCount * 3, 1)
                     Menu.Checkbox("rBlock", "Cancel if no hit", true)
                     Menu.Checkbox("rDraw", "Draw Range", true)
                 end
@@ -416,53 +524,6 @@ function RetrieveBallPosition()
             return
         end
     end
-end
-function getValuePos(enemies, delay)
-    local count = 0
-    do
-        local i = 0
-        while i < #enemies do
-            local enemy = enemies[i + 1].AsHero
-            if IsInRange(enemy, rRadius, delay) then
-                count = count + Menu.Get("rWeight" .. enemy.CharName)
-            end
-            i = i + 1
-        end
-    end
-    return count
-end
-function getBestER(allies, enemies)
-    local ally = nil
-    local bestCount = 0
-    do
-        local i = 0
-        while i < #allies do
-            local count = 0
-            local reachDelay = (ballPosition:Distance(allies[i + 1]) / eSpeed) + baseDelay
-            do
-                local j = 0
-                while j < #enemies do
-                    local enemy = enemies[j + 1].AsHero
-                    if IsInRange(enemy, rRadius, reachDelay) then
-                        count = count + Menu.Get("rWeight" .. enemy.CharName)
-                    end
-                    j = j + 1
-                end
-            end
-            if count > bestCount then
-                bestCount = count
-                ally = allies[i + 1]
-            end
-            i = i + 1
-        end
-    end
-    return ally, bestCount
-end
-function tryR(allies, enemies)
-    local rValue = getValuePos(enemies, rDelay)
-    local erValue = {
-        getBestER(allies, enemies)
-    }
 end
 OnLoad = function()
     InitLog()

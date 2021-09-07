@@ -1,11 +1,11 @@
 /*
 TO_DO :
 
+Q AOE not ball on self
+QR not ball on self
+Harass mana slider
 Enemy Spell Cancel
-E to Q
 KS
-R Logic
-E Protect (check if hit time < ball reach time)
 Initiator (Cast E on dashing ally to R)
 Spell Lane Clear
 Spell Last Hit + Tear farm
@@ -202,10 +202,11 @@ function InitMenu(): void {
       Menu.NewTree('eWaight', 'Enemy value :', function () {
         for (const [key, obj] of pairs(enemies)) {
           const enemy = obj.AsHero;
-          Menu.Slider('rWeight' + enemy.CharName, enemy.CharName, 1, 0, 3, 1);
+          Menu.Slider('rWeight' + enemy.CharName, enemy.CharName, 1, 1, 3, 1);
+          break;
         }
       });
-      Menu.Slider('rValue', 'Value to R', 1, 0, enemiesCount * 3, 1);
+      Menu.Slider('rValue', 'Value to R', 1, 1, enemiesCount * 3, 1);
       //Menu.Checkbox('rCancel', 'Use to cancel spell', true);
       Menu.Checkbox('rBlock', 'Cancel if no hit', true);
       Menu.Checkbox('rDraw', 'Draw Range', true);
@@ -279,10 +280,10 @@ function OnCreateObject(obj: GameObject): void {
 }
 
 function OnCastSpell(args: OnCastSpellArgs): void {
-  if (args.Slot === SpellSlots.R && Menu.Get('rCancel')) {
+  if (Menu.Get('rBlock') && args.Slot === SpellSlots.R) {
     const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
     for (let i = 0; i < enemies.length; i++) {
-      if (IsInRange(enemies[i], rRadius, rDelay)) {
+      if (IsInRange(enemies[i], rRadius, ballPosition, rDelay)) {
         return;
       }
     }
@@ -293,9 +294,9 @@ function OnCastSpell(args: OnCastSpellArgs): void {
 function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
   if (
     !ballMoving &&
-    spell.Target &&
     source.IsEnemy &&
     source.IsHero &&
+    spell.Target &&
     !spell.IsBasicAttack &&
     spell.Target.IsHero &&
     spell.Target.IsAlly
@@ -314,13 +315,6 @@ function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
   }
 }
 
-function IsInRange(enemy: AIHeroClient, range: number, delay = 0): boolean {
-  if (enemy.Position.Distance(ballPosition) > range) return false;
-  if (delay === 0) return true;
-  const enemyPos = enemy.FastPrediction(delay);
-  return enemyPos.Distance(ballPosition) <= range;
-}
-
 function OnDraw(): void {
   const drawBallPos = Geometry.Vector(ballPosition);
   const t = Core.Game.GetTime() % 0.8;
@@ -330,6 +324,29 @@ function OnDraw(): void {
   if (Menu.Get('ballDraw') && !ballMoving) {
     Core.Renderer.DrawCircle3D(drawBallPos, 100, 10);
   }
+}
+
+function IsInRange(
+  enemy: AIHeroClient,
+  range: number,
+  position: Vector,
+  delay = 0
+): boolean {
+  if (enemy.Position.Distance(position) > range) return false;
+  if (delay === 0) return true;
+  const enemyPos = enemy.FastPrediction(delay);
+  return enemyPos.Distance(position) <= range;
+}
+
+function getValuePos(enemies: AIHeroClient[], delay: number) {
+  let count = 0;
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i].AsHero;
+    if (IsInRange(enemy, rRadius, ballPosition, delay)) {
+      count += Menu.Get('rWeight' + enemy.CharName);
+    }
+  }
+  return count;
 }
 
 function tryQ(enemies: AIHeroClient[]): boolean {
@@ -355,7 +372,7 @@ function tryQ(enemies: AIHeroClient[]): boolean {
 function tryW(enemies: AIHeroClient[]): boolean {
   if (!W.IsReady() || W.GetManaCost() > Player.Mana) return false;
   for (let i = 0; i < enemies.length; i++) {
-    if (IsInRange(enemies[i], wRadius, baseDelay)) {
+    if (IsInRange(enemies[i], wRadius, ballPosition, baseDelay)) {
       return W.Cast();
     }
   }
@@ -379,21 +396,16 @@ function tryE(enemies: AIHeroClient[]) {
   return false;
 }
 
-function getValuePos(enemies: AIHeroClient[], delay: number) {
-  let count = 0;
-  for (let i = 0; i < enemies.length; i++) {
-    const enemy = enemies[i].AsHero;
-    if (IsInRange(enemy, rRadius, delay)) {
-      count += Menu.Get('rWeight' + enemy.CharName);
-    }
-  }
-  return count;
-}
-
 function getBestER(
   allies: AIHeroClient[],
   enemies: AIHeroClient[]
 ): LuaMultiReturn<[AIBaseClient | null, number]> {
+  if (
+    !Menu.Get('eToR') ||
+    !E.IsReady() ||
+    E.GetManaCost() + R.GetManaCost() > Player.Mana
+  )
+    return $multi(null, 0);
   let ally: AIHeroClient = null;
   let bestCount = 0;
   for (let i = 0; i < allies.length; i++) {
@@ -401,7 +413,7 @@ function getBestER(
     const reachDelay = ballPosition.Distance(allies[i]) / eSpeed + baseDelay;
     for (let j = 0; j < enemies.length; j++) {
       const enemy = enemies[j].AsHero;
-      if (IsInRange(enemy, rRadius, reachDelay)) {
+      if (IsInRange(enemy, rRadius, allies[i].Position, reachDelay)) {
         count += Menu.Get('rWeight' + enemy.CharName);
       }
     }
@@ -413,18 +425,72 @@ function getBestER(
   return $multi(ally, bestCount);
 }
 
+function getQR(
+  enemies: AIHeroClient[]
+): LuaMultiReturn<[Vector | null, number]> {
+  if (
+    !Menu.Get('qToR') ||
+    !Q.IsReady() ||
+    Q.GetManaCost() + R.GetManaCost() > Player.Mana
+  )
+    return $multi(null, 0);
+  let count = 0;
+  if (ballOnSelf) {
+    const castPos = QR.GetBestCircularCastPos(enemies);
+    for (let j = 0; j < enemies.length; j++) {
+      const enemy = enemies[j].AsHero;
+      if (
+        IsInRange(
+          enemy,
+          rRadius,
+          castPos[0],
+          baseDelay + ballPosition.Distance(castPos[0]) / qSpeed
+        )
+      ) {
+        count += Menu.Get('rWeight' + enemy.CharName);
+      }
+    }
+    return $multi(castPos[0], count);
+  }
+  return $multi(null, 0);
+}
+
 function tryR(allies: AIHeroClient[], enemies: AIHeroClient[]) {
-  const rValue = getValuePos(enemies, rDelay);
-  const erValue = getBestER(allies, enemies);
+  if (!R.IsReady || R.GetManaCost() > Player.Mana) return false;
+  const rResult = getValuePos(enemies, rDelay);
+  const qrResult = getQR(enemies);
+  const erResult = getBestER(allies, enemies);
+
+  print(erResult[1].toString());
+  if (
+    rResult >= Menu.Get('rValue') &&
+    rResult >= qrResult[1] &&
+    rResult >= erResult[1]
+  ) {
+    return R.Cast();
+  }
+  if (erResult[1] >= Menu.Get('rValue') && erResult[1] >= qrResult[1]) {
+    return E.Cast(erResult[0]);
+  }
+  if (qrResult[1] >= Menu.Get('rValue')) {
+    return Q.Cast(qrResult[0]);
+  }
+  return false;
 }
 
 function Auto(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
+  if (Menu.Get('rAuto')) {
+    if (tryR(allies, enemies)) return;
+  }
   if (Menu.Get('wAuto')) {
     if (tryW(enemies)) return;
   }
 }
 
 function Combo(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
+  if (Menu.Get('rCombo')) {
+    if (tryR(allies, enemies)) return;
+  }
   if (Menu.Get('qCombo')) {
     if (tryQ(enemies)) return;
   }
