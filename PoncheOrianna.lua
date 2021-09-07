@@ -263,9 +263,6 @@ function tryR(allies, enemies)
     local erResult = {
         getBestER(allies, enemies)
     }
-    print(
-        tostring(erResult[2])
-    )
     if ((rResult >= Menu.Get("rValue")) and (rResult >= qrResult[2])) and (rResult >= erResult[2]) then
         return R:Cast()
     end

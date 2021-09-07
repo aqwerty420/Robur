@@ -1,16 +1,24 @@
 /*
-TO_DO :
 
-Q AOE not ball on self
-QR not ball on self
+release:
+
 Harass mana slider
 Enemy Spell Cancel
 KS
-Initiator (Cast E on dashing ally to R)
-Spell Lane Clear
-Spell Last Hit + Tear farm
 Flee (E + W)
 Finish Draw
+Initiator (Cast E on dashing ally to R)
+
+
+then:
+Spell Lane Clear
+Spell Last Hit + Tear farm
+
+
+maybe:
+
+Q AOE ball not on self
+QR ball not on self
 
 */
 
@@ -159,11 +167,13 @@ function InitMenu(): void {
   const allies = ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Heroes);
   const alliesName: string[] = [];
   let enemiesCount = 0;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, obj] of pairs(enemies)) {
     const enemyName = obj.AsHero.CharName;
     if (!enemiesName.includes(enemyName)) enemiesName.push(obj.AsHero.CharName);
     enemiesCount++;
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, obj] of pairs(allies)) {
     if (obj.IsMe) continue;
     const allyName = obj.AsHero.CharName;
@@ -466,7 +476,6 @@ function tryR(allies: AIHeroClient[], enemies: AIHeroClient[]) {
   const qrResult = getQR(enemies);
   const erResult = getBestER(allies, enemies);
 
-  print(erResult[1].toString());
   if (
     rResult >= Menu.Get('rValue') &&
     rResult >= qrResult[1] &&
