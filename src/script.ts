@@ -155,10 +155,19 @@ function InitLog(): void {
 
 function InitMenu(): void {
   const enemies = ObjectManager.Get(AllyOrEnemy.Enemy, ObjectType.Heroes);
+  const enemiesName: string[] = [];
   const allies = ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Heroes);
+  const alliesName: string[] = [];
   let enemiesCount = 0;
   for (const [key, obj] of pairs(enemies)) {
+    const enemyName = obj.AsHero.CharName;
+    if (!enemiesName.includes(enemyName)) enemiesName.push(obj.AsHero.CharName);
     enemiesCount++;
+  }
+  for (const [key, obj] of pairs(allies)) {
+    if (obj.IsMe) continue;
+    const allyName = obj.AsHero.CharName;
+    if (!alliesName.includes(allyName)) alliesName.push(obj.AsHero.CharName);
   }
   if (enemiesCount === 0) enemiesCount = 1;
   Menu.RegisterMenu('PoncheOrianna', 'PoncheOrianna', function () {
@@ -200,9 +209,8 @@ function InitMenu(): void {
       Menu.Checkbox('eToR', 'E to R', true);
       Menu.Checkbox('qToR', 'Q to R', true);
       Menu.NewTree('eWaight', 'Enemy value :', function () {
-        for (const [key, obj] of pairs(enemies)) {
-          const enemy = obj.AsHero;
-          Menu.Slider('rWeight' + enemy.CharName, enemy.CharName, 1, 1, 3, 1);
+        for (const enemyName of enemiesName) {
+          Menu.Slider('rWeight' + enemyName, enemyName, 1, 1, 3, 1);
         }
       });
       Menu.Slider('rValue', 'Value to R', 1, 1, enemiesCount * 3, 1);
@@ -455,7 +463,7 @@ function getQR(
 }
 
 function tryR(allies: AIHeroClient[], enemies: AIHeroClient[]) {
-  if (!R.IsReady || R.GetManaCost() > Player.Mana) return false;
+  if (!R.IsReady() || R.GetManaCost() > Player.Mana) return false;
   const rResult = getValuePos(enemies, rDelay);
   const qrResult = getQR(enemies);
   const erResult = getBestER(allies, enemies);

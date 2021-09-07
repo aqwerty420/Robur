@@ -1,4 +1,24 @@
 -- Lua Library inline imports
+function __TS__ArrayIncludes(self, searchElement, fromIndex)
+    if fromIndex == nil then
+        fromIndex = 0
+    end
+    local len = #self
+    local k = fromIndex
+    if fromIndex < 0 then
+        k = len + fromIndex
+    end
+    if k < 0 then
+        k = 0
+    end
+    for i = k, len do
+        if self[i + 1] == searchElement then
+            return true
+        end
+    end
+    return false
+end
+
 function __TS__ArrayPush(arr, ...)
     local items = {...}
     for ____, item in ipairs(items) do
@@ -233,7 +253,7 @@ function getQR(enemies)
     return nil, 0
 end
 function tryR(allies, enemies)
-    if (not R.IsReady) or (R:GetManaCost() > Player.Mana) then
+    if (not R:IsReady()) or (R:GetManaCost() > Player.Mana) then
         return false
     end
     local rResult = getValuePos(enemies, rDelay)
@@ -319,61 +339,61 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch104 = orbwalkerMode
-    if ____switch104 == "Combo" then
-        goto ____switch104_case_0
-    elseif ____switch104 == "Harass" then
-        goto ____switch104_case_1
-    elseif ____switch104 == "Lasthit" then
-        goto ____switch104_case_2
-    elseif ____switch104 == "Waveclear" then
-        goto ____switch104_case_3
-    elseif ____switch104 == "Flee" then
-        goto ____switch104_case_4
-    elseif ____switch104 == "nil" then
-        goto ____switch104_case_5
+    local ____switch108 = orbwalkerMode
+    if ____switch108 == "Combo" then
+        goto ____switch108_case_0
+    elseif ____switch108 == "Harass" then
+        goto ____switch108_case_1
+    elseif ____switch108 == "Lasthit" then
+        goto ____switch108_case_2
+    elseif ____switch108 == "Waveclear" then
+        goto ____switch108_case_3
+    elseif ____switch108 == "Flee" then
+        goto ____switch108_case_4
+    elseif ____switch108 == "nil" then
+        goto ____switch108_case_5
     end
-    goto ____switch104_end
-    ::____switch104_case_0::
+    goto ____switch108_end
+    ::____switch108_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch104_end
+            goto ____switch108_end
         end
     end
-    ::____switch104_case_1::
+    ::____switch108_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch104_end
+            goto ____switch108_end
         end
     end
-    ::____switch104_case_2::
+    ::____switch108_case_2::
     do
         do
-            goto ____switch104_end
+            goto ____switch108_end
         end
     end
-    ::____switch104_case_3::
+    ::____switch108_case_3::
     do
         do
-            goto ____switch104_end
+            goto ____switch108_end
         end
     end
-    ::____switch104_case_4::
+    ::____switch108_case_4::
     do
         do
-            goto ____switch104_end
+            goto ____switch108_end
         end
     end
-    ::____switch104_case_5::
+    ::____switch108_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch104_end
+            goto ____switch108_end
         end
     end
-    ::____switch104_end::
+    ::____switch108_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -420,10 +440,28 @@ function InitLog()
 end
 function InitMenu()
     local enemies = ObjectManager.Get("enemy", "heroes")
+    local enemiesName = {}
     local allies = ObjectManager.Get("ally", "heroes")
+    local alliesName = {}
     local enemiesCount = 0
     for key, obj in pairs(enemies) do
+        local enemyName = obj.AsHero.CharName
+        if not __TS__ArrayIncludes(enemiesName, enemyName) then
+            __TS__ArrayPush(enemiesName, obj.AsHero.CharName)
+        end
         enemiesCount = enemiesCount + 1
+    end
+    for key, obj in pairs(allies) do
+        do
+            if obj.IsMe then
+                goto __continue7
+            end
+            local allyName = obj.AsHero.CharName
+            if not __TS__ArrayIncludes(alliesName, allyName) then
+                __TS__ArrayPush(alliesName, obj.AsHero.CharName)
+            end
+        end
+        ::__continue7::
     end
     if enemiesCount == 0 then
         enemiesCount = 1
@@ -489,9 +527,8 @@ function InitMenu()
                         "eWaight",
                         "Enemy value :",
                         function()
-                            for key, obj in pairs(enemies) do
-                                local enemy = obj.AsHero
-                                Menu.Slider("rWeight" .. enemy.CharName, enemy.CharName, 1, 1, 3, 1)
+                            for ____, enemyName in ipairs(enemiesName) do
+                                Menu.Slider("rWeight" .. enemyName, enemyName, 1, 1, 3, 1)
                             end
                         end
                     )
