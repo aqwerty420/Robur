@@ -400,66 +400,60 @@ function OnTick()
         return
     end
     local enemies = GetValidNearbyHeroes("enemy")
+    local orbwalkerMode = Orbwalker.GetMode()
+    if orbwalkerMode == "Flee" then
+        return Flee()
+    end
     if #enemies == 0 then
         return
     end
-    local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch131 = orbwalkerMode
-    if ____switch131 == "Combo" then
-        goto ____switch131_case_0
-    elseif ____switch131 == "Harass" then
-        goto ____switch131_case_1
-    elseif ____switch131 == "Lasthit" then
-        goto ____switch131_case_2
-    elseif ____switch131 == "Waveclear" then
-        goto ____switch131_case_3
-    elseif ____switch131 == "Flee" then
-        goto ____switch131_case_4
-    elseif ____switch131 == "nil" then
-        goto ____switch131_case_5
+    local ____switch132 = orbwalkerMode
+    if ____switch132 == "Combo" then
+        goto ____switch132_case_0
+    elseif ____switch132 == "Harass" then
+        goto ____switch132_case_1
+    elseif ____switch132 == "Lasthit" then
+        goto ____switch132_case_2
+    elseif ____switch132 == "Waveclear" then
+        goto ____switch132_case_3
+    elseif ____switch132 == "nil" then
+        goto ____switch132_case_4
     end
-    goto ____switch131_end
-    ::____switch131_case_0::
+    goto ____switch132_end
+    ::____switch132_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch131_end
+            goto ____switch132_end
         end
     end
-    ::____switch131_case_1::
+    ::____switch132_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch131_end
+            goto ____switch132_end
         end
     end
-    ::____switch131_case_2::
+    ::____switch132_case_2::
     do
         do
-            goto ____switch131_end
+            goto ____switch132_end
         end
     end
-    ::____switch131_case_3::
+    ::____switch132_case_3::
     do
         do
-            goto ____switch131_end
+            goto ____switch132_end
         end
     end
-    ::____switch131_case_4::
-    do
-        do
-            Flee()
-            goto ____switch131_end
-        end
-    end
-    ::____switch131_case_5::
+    ::____switch132_case_4::
     do
         do
             Auto(allies, enemies)
-            goto ____switch131_end
+            goto ____switch132_end
         end
     end
-    ::____switch131_end::
+    ::____switch132_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -481,7 +475,7 @@ ballAllyBuffName = "orianaghost"
 ballObjName = "TheDoomBall"
 ballMissileNames = {"OrianaIzuna", "OrianaRedact"}
 collisions = {WindWall = true, Wall = true}
-qRange = 825
+qRange = 815
 qSpeed = 1400
 ballRadius = 80
 wRadius = 225

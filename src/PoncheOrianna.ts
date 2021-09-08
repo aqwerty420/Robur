@@ -51,7 +51,7 @@ const ballMissileNames: string[] = ['OrianaIzuna', 'OrianaRedact'];
 
 //const ballMaxRange = 1250;
 const collisions: CollisionsPossible = { WindWall: true, Wall: true };
-const qRange = 825;
+const qRange = 815;
 const qSpeed = 1400;
 const ballRadius = 80;
 const wRadius = 225;
@@ -639,9 +639,13 @@ function OnTick(): void {
 
   const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
 
-  if (enemies.length === 0) return;
-
   const orbwalkerMode = Orbwalker.GetMode();
+
+  if (orbwalkerMode === OrbwalkerMode.Flee) {
+    return Flee();
+  }
+
+  if (enemies.length === 0) return;
 
   switch (orbwalkerMode) {
     case OrbwalkerMode.Combo: {
@@ -658,10 +662,6 @@ function OnTick(): void {
     }
     case OrbwalkerMode.Waveclear: {
       //statements;
-      break;
-    }
-    case OrbwalkerMode.Flee: {
-      Flee();
       break;
     }
     case OrbwalkerMode.Nil: {
