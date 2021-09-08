@@ -2,6 +2,7 @@
 
 TO_DO NEXT:
 
+E To Q
 KS
 R Combo Kill
 Harass mana slider
@@ -29,6 +30,13 @@ if (Player.CharName != 'Orianna') {
   // @ts-ignore
   return false;
 }
+
+/*
+_G.CoreEx.AutoUpdate(
+  'https://raw.githubusercontent.com/aqwerty420/Robur/main/PoncheOrianna.lua',
+  '1.0.0'
+);
+*/
 
 const Core = _G.CoreEx;
 const ObjectManager = Core.ObjectManager;
@@ -195,7 +203,7 @@ function InitMenu(): void {
       Menu.Checkbox('wHarass', 'Harass', true);
       Menu.Checkbox('wFlee', 'Flee', true);
       //Menu.Checkbox('wKs', 'Kill Steal', true);
-      Menu.Checkbox('wAuto', 'Auto', true);
+      Menu.Checkbox('wAuto', 'Auto', false);
       //Menu.Checkbox('wDraw', 'Draw Range', true);
     });
     Menu.NewTree('e', 'E Options', function () {

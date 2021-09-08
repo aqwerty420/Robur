@@ -547,7 +547,7 @@ function InitMenu()
                     Menu.Checkbox("wCombo", "Combo", true)
                     Menu.Checkbox("wHarass", "Harass", true)
                     Menu.Checkbox("wFlee", "Flee", true)
-                    Menu.Checkbox("wAuto", "Auto", true)
+                    Menu.Checkbox("wAuto", "Auto", false)
                 end
             )
             Menu.NewTree(
