@@ -195,15 +195,15 @@ function InitMenu(): void {
     Menu.NewTree('w', 'W Options', function () {
       Menu.Checkbox('wCombo', 'Combo', true);
       Menu.Checkbox('wHarass', 'Harass', true);
-      //Menu.Checkbox('wFlee', 'Flee', true);
+      Menu.Checkbox('wFlee', 'Flee', true);
       Menu.Checkbox('wKs', 'Kill Steal', true);
       Menu.Checkbox('wAuto', 'Auto', true);
-      Menu.Checkbox('wDraw', 'Draw Range', true);
+      //Menu.Checkbox('wDraw', 'Draw Range', true);
     });
     Menu.NewTree('e', 'E Options', function () {
       Menu.Checkbox('eCombo', 'Combo', true);
       Menu.Checkbox('eHarass', 'Harass', false);
-      //Menu.Checkbox('eFlee', 'Flee', true);
+      Menu.Checkbox('eFlee', 'Flee', true);
       Menu.Checkbox('eKs', 'Kill Steal', true);
       Menu.Checkbox('eShieldSelf', 'Protect self', true);
       Menu.NewTree('eProtectList', 'Protect ally :', function () {
@@ -212,7 +212,7 @@ function InitMenu(): void {
         }
       });
       Menu.Checkbox('eShieldAllies', 'Protect allies', true);
-      Menu.Checkbox('eDraw', 'Draw Range', false);
+      //Menu.Checkbox('eDraw', 'Draw Range', false);
     });
     Menu.NewTree('r', 'R Options', function () {
       Menu.Checkbox('rCombo', 'Combo', true);
@@ -547,7 +547,7 @@ function getQR(
 
 function tryR(allies: AIHeroClient[], enemies: AIHeroClient[]) {
   if (!R.IsReady() || R.GetManaCost() > Player.Mana) return false;
-  const rResult = getValuePos(enemies, rDelay);
+  const rResult = getValuePos(enemies, rDelay, ballPosition);
   const qrResult = getQR(enemies);
   const erResult = getBestER(allies, enemies);
 
@@ -605,11 +605,11 @@ function Harass(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
 
 function Flee(): void {
   if (!ballOnSelf) {
-    if (E.IsReady() && E.GetManaCost() <= Player.Mana) {
+    if (Menu.Get('eFlee') && E.IsReady() && E.GetManaCost() <= Player.Mana) {
       E.Cast(Player);
     }
   } else {
-    if (W.IsReady() && W.GetManaCost() <= Player.Mana) {
+    if (Menu.Get('wFlee') && W.IsReady() && W.GetManaCost() <= Player.Mana) {
       W.Cast();
     }
   }

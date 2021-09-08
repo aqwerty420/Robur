@@ -302,7 +302,7 @@ function tryR(allies, enemies)
     if (not R:IsReady()) or (R:GetManaCost() > Player.Mana) then
         return false
     end
-    local rResult = getValuePos(enemies, rDelay)
+    local rResult = getValuePos(enemies, rDelay, ballPosition)
     local qrResult = {
         getQR(enemies)
     }
@@ -373,11 +373,11 @@ function Harass(allies, enemies)
 end
 function Flee()
     if not ballOnSelf then
-        if E:IsReady() and (E:GetManaCost() <= Player.Mana) then
+        if (Menu.Get("eFlee") and E:IsReady()) and (E:GetManaCost() <= Player.Mana) then
             E:Cast(Player)
         end
     else
-        if W:IsReady() and (W:GetManaCost() <= Player.Mana) then
+        if (Menu.Get("wFlee") and W:IsReady()) and (W:GetManaCost() <= Player.Mana) then
             W:Cast()
         end
     end
@@ -540,9 +540,9 @@ function InitMenu()
                 function()
                     Menu.Checkbox("wCombo", "Combo", true)
                     Menu.Checkbox("wHarass", "Harass", true)
+                    Menu.Checkbox("wFlee", "Flee", true)
                     Menu.Checkbox("wKs", "Kill Steal", true)
                     Menu.Checkbox("wAuto", "Auto", true)
-                    Menu.Checkbox("wDraw", "Draw Range", true)
                 end
             )
             Menu.NewTree(
@@ -551,6 +551,7 @@ function InitMenu()
                 function()
                     Menu.Checkbox("eCombo", "Combo", true)
                     Menu.Checkbox("eHarass", "Harass", false)
+                    Menu.Checkbox("eFlee", "Flee", true)
                     Menu.Checkbox("eKs", "Kill Steal", true)
                     Menu.Checkbox("eShieldSelf", "Protect self", true)
                     Menu.NewTree(
@@ -563,7 +564,6 @@ function InitMenu()
                         end
                     )
                     Menu.Checkbox("eShieldAllies", "Protect allies", true)
-                    Menu.Checkbox("eDraw", "Draw Range", false)
                 end
             )
             Menu.NewTree(
