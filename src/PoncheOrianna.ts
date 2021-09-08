@@ -2,21 +2,20 @@
 
 release:
 
-Harass mana slider
 KS
-Flee (E + W)
 Finish Draw
-Initiator (Cast E on dashing ally to R)
 
 
 then:
+Harass mana slider
+E To ally dmg
 Spell Lane Clear
 Spell Last Hit + Tear farm
 
 
 maybe:
 
-Q + R Cancel
+QR Cancel
 Q AOE ball not on self
 QR ball not on self
 
@@ -37,7 +36,6 @@ if (Player.CharName != 'Orianna') {
 const Core = _G.CoreEx;
 const ObjectManager = Core.ObjectManager;
 const Game = Core.Game;
-//const Input = Core.Input;
 const Geometry = Core.Geometry;
 const Enums = Core.Enums;
 const SpellSlots = Enums.SpellSlots;
@@ -66,8 +64,6 @@ const rDelay = 0.5;
 const baseDelay = 0.25;
 
 const mathHuge = _G.math.huge;
-
-//const ballDrawAngle = 360;
 
 let ballPosition: Vector = Geometry.Vector();
 let ballMoving = false;
@@ -154,6 +150,10 @@ const events: EventToRegister[] = [
     id: Events.OnInterruptibleSpell,
     callback: OnInterruptibleSpell,
   },
+  {
+    id: Events.OnGapclose,
+    callback: OnGapclose,
+  },
 ];
 
 function InitLog(): void {
@@ -229,10 +229,8 @@ function InitMenu(): void {
       Menu.Slider('rValue', 'Value to cast', 1, 1, enemiesCount * 3, 1);
       Menu.Checkbox('rCancel', 'Use to cancel spell', true);
       Menu.NewTree('SpellToCancel', 'Spell to cancel :', function () {
-        Menu.Text(
-          'Even ticked a spell will be cancelled only if it is possible',
-          false
-        );
+        Menu.Text('Even ticked a spell will be cancelled', false);
+        Menu.Text('only if it is possible', false);
         for (const enemyName of enemiesName) {
           Menu.NewTree(enemyName + 'Cancel', enemyName + ' :', function () {
             Menu.Checkbox(enemyName + 'CancelQ', 'Q', true);
@@ -389,6 +387,23 @@ function OnInterruptibleSpell(
   }
 }
 
+function OnGapclose(source: AIHeroClient, dash: DashInstance) {
+  if (
+    Menu.Get('eToR') &&
+    (Menu.Get('rAuto') ||
+      (Menu.Get('rCombo') && Orbwalker.GetMode() === OrbwalkerMode.Combo)) &&
+    source.IsAlly &&
+    source.IsHero &&
+    E.CanCast(source)
+  ) {
+    const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
+    const dashPath = dash.GetPaths();
+    const lastPos = dashPath[dashPath.length - 1].EndPos;
+    if (getValuePos(enemies, dash.EndDelay, lastPos) >= Menu.Get('rValue'))
+      E.Cast(source);
+  }
+}
+
 function OnDraw(): void {
   const drawBallPos = Geometry.Vector(ballPosition);
   const t = Core.Game.GetTime() % 0.8;
@@ -404,19 +419,19 @@ function IsInRange(
   enemy: AIHeroClient,
   range: number,
   position: Vector,
-  delay = 0
+  delay?: number
 ): boolean {
   if (enemy.Position.Distance(position) > range) return false;
-  if (delay === 0) return true;
+  if (!delay) return true;
   const enemyPos = enemy.FastPrediction(delay);
   return enemyPos.Distance(position) <= range;
 }
 
-function getValuePos(enemies: AIHeroClient[], delay: number) {
+function getValuePos(enemies: AIHeroClient[], delay: number, position: Vector) {
   let count = 0;
   for (let i = 0; i < enemies.length; i++) {
     const enemy = enemies[i].AsHero;
-    if (IsInRange(enemy, Menu.Get('rRadius'), ballPosition, delay)) {
+    if (IsInRange(enemy, Menu.Get('rRadius'), position, delay)) {
       count += Menu.Get('rWeight' + enemy.CharName);
     }
   }
@@ -584,7 +599,19 @@ function Harass(allies: AIHeroClient[], enemies: AIHeroClient[]): void {
     if (tryW(enemies)) return;
   }
   if (Menu.Get('eHarass')) {
-    if (tryW(enemies)) return;
+    if (tryE(enemies)) return;
+  }
+}
+
+function Flee(): void {
+  if (!ballOnSelf) {
+    if (E.IsReady() && E.GetManaCost() <= Player.Mana) {
+      E.Cast(Player);
+    }
+  } else {
+    if (W.IsReady() && W.GetManaCost() <= Player.Mana) {
+      W.Cast();
+    }
   }
 }
 
@@ -626,7 +653,7 @@ function OnTick(): void {
       break;
     }
     case OrbwalkerMode.Flee: {
-      //statements;
+      Flee();
       break;
     }
     case OrbwalkerMode.Nil: {

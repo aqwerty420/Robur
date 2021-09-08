@@ -131,6 +131,16 @@ function OnInterruptibleSpell(source, spell, danger, endTime, canMove)
         end
     end
 end
+function OnGapclose(source, dash)
+    if (((Menu.Get("eToR") and (Menu.Get("rAuto") or (Menu.Get("rCombo") and (Orbwalker.GetMode() == "Combo")))) and source.IsAlly) and source.IsHero) and E:CanCast(source) then
+        local enemies = GetValidNearbyHeroes("enemy")
+        local dashPath = dash:GetPaths()
+        local lastPos = dashPath[#dashPath].EndPos
+        if getValuePos(enemies, dash.EndDelay, lastPos) >= Menu.Get("rValue") then
+            E:Cast(source)
+        end
+    end
+end
 function OnDraw()
     local drawBallPos = Geometry.Vector(ballPosition)
     local t = Core.Game.GetTime() % 0.8
@@ -141,19 +151,16 @@ function OnDraw()
     end
 end
 function IsInRange(enemy, range, position, delay)
-    if delay == nil then
-        delay = 0
-    end
     if enemy.Position:Distance(position) > range then
         return false
     end
-    if delay == 0 then
+    if not delay then
         return true
     end
     local enemyPos = enemy:FastPrediction(delay)
     return enemyPos:Distance(position) <= range
 end
-function getValuePos(enemies, delay)
+function getValuePos(enemies, delay, position)
     local count = 0
     do
         local i = 0
@@ -162,7 +169,7 @@ function getValuePos(enemies, delay)
             if IsInRange(
                 enemy,
                 Menu.Get("rRadius"),
-                ballPosition,
+                position,
                 delay
             ) then
                 count = count + Menu.Get("rWeight" .. enemy.CharName)
@@ -359,8 +366,19 @@ function Harass(allies, enemies)
         end
     end
     if Menu.Get("eHarass") then
-        if tryW(enemies) then
+        if tryE(enemies) then
             return
+        end
+    end
+end
+function Flee()
+    if not ballOnSelf then
+        if E:IsReady() and (E:GetManaCost() <= Player.Mana) then
+            E:Cast(Player)
+        end
+    else
+        if W:IsReady() and (W:GetManaCost() <= Player.Mana) then
+            W:Cast()
         end
     end
 end
@@ -375,61 +393,62 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch119 = orbwalkerMode
-    if ____switch119 == "Combo" then
-        goto ____switch119_case_0
-    elseif ____switch119 == "Harass" then
-        goto ____switch119_case_1
-    elseif ____switch119 == "Lasthit" then
-        goto ____switch119_case_2
-    elseif ____switch119 == "Waveclear" then
-        goto ____switch119_case_3
-    elseif ____switch119 == "Flee" then
-        goto ____switch119_case_4
-    elseif ____switch119 == "nil" then
-        goto ____switch119_case_5
+    local ____switch127 = orbwalkerMode
+    if ____switch127 == "Combo" then
+        goto ____switch127_case_0
+    elseif ____switch127 == "Harass" then
+        goto ____switch127_case_1
+    elseif ____switch127 == "Lasthit" then
+        goto ____switch127_case_2
+    elseif ____switch127 == "Waveclear" then
+        goto ____switch127_case_3
+    elseif ____switch127 == "Flee" then
+        goto ____switch127_case_4
+    elseif ____switch127 == "nil" then
+        goto ____switch127_case_5
     end
-    goto ____switch119_end
-    ::____switch119_case_0::
+    goto ____switch127_end
+    ::____switch127_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch119_end
+            goto ____switch127_end
         end
     end
-    ::____switch119_case_1::
+    ::____switch127_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch119_end
+            goto ____switch127_end
         end
     end
-    ::____switch119_case_2::
+    ::____switch127_case_2::
     do
         do
-            goto ____switch119_end
+            goto ____switch127_end
         end
     end
-    ::____switch119_case_3::
+    ::____switch127_case_3::
     do
         do
-            goto ____switch119_end
+            goto ____switch127_end
         end
     end
-    ::____switch119_case_4::
+    ::____switch127_case_4::
     do
         do
-            goto ____switch119_end
+            Flee()
+            goto ____switch127_end
         end
     end
-    ::____switch119_case_5::
+    ::____switch127_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch119_end
+            goto ____switch127_end
         end
     end
-    ::____switch119_end::
+    ::____switch127_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -469,7 +488,7 @@ W = SpellLib.Active({Slot = SpellSlots.W, Range = 0, Speed = mathHuge, Delay = b
 E = SpellLib.Targeted({Slot = SpellSlots.E, Range = 1120, Speed = eSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = collisions})
 R = SpellLib.Active({Slot = SpellSlots.R, Range = 0, Speed = mathHuge, Delay = rDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
 QR = SpellLib.Skillshot({Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
-events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}, {id = Events.OnInterruptibleSpell, callback = OnInterruptibleSpell}}
+events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}, {id = Events.OnInterruptibleSpell, callback = OnInterruptibleSpell}, {id = Events.OnGapclose, callback = OnGapclose}}
 function InitLog()
     module("PoncheOrianna", package.seeall, log.setup)
     clean.module("PoncheOrianna", clean.seeall, log.setup)
@@ -572,7 +591,8 @@ function InitMenu()
                         "SpellToCancel",
                         "Spell to cancel :",
                         function()
-                            Menu.Text("Even ticked a spell will be cancelled only if it is possible", false)
+                            Menu.Text("Even ticked a spell will be cancelled", false)
+                            Menu.Text("only if it is possible", false)
                             for ____, enemyName in ipairs(enemiesName) do
                                 Menu.NewTree(
                                     enemyName .. "Cancel",
