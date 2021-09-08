@@ -142,12 +142,23 @@ function OnGapclose(source, dash)
     end
 end
 function OnDraw()
-    local drawBallPos = Geometry.Vector(ballPosition)
-    local t = Core.Game.GetTime() % 0.8
-    drawBallPos.y = drawBallPos.y + 100
-    drawBallPos.y = drawBallPos.y + (((t < 0.4) and (function() return -50 * t end)) or (function() return -(20 - ((t - 0.4) * 50)) end))()
-    if Menu.Get("ballDraw") and (not ballMoving) then
-        Core.Renderer.DrawCircle3D(drawBallPos, 100, 10)
+    if not ballMoving then
+        if Menu.Get("ballDraw") then
+            local drawBallPos = Geometry.Vector(ballPosition)
+            local t = Core.Game.GetTime() % 0.8
+            drawBallPos.y = drawBallPos.y + 100
+            drawBallPos.y = drawBallPos.y + (((t < 0.4) and (function() return -50 * t end)) or (function() return -(20 - ((t - 0.4) * 50)) end))()
+            Core.Renderer.DrawCircle3D(drawBallPos, 100, 10, 10)
+        end
+        if Menu.Get("rDraw") then
+            Core.Renderer.DrawCircle3D(ballPosition, rRadius, 10)
+        end
+    end
+    if Menu.Get("qDraw") then
+        Core.Renderer.DrawCircle3D(Player.Position, qRange, 10)
+    end
+    if Menu.Get("eDraw") then
+        Core.Renderer.DrawCircle3D(Player.Position, eRange, 10)
     end
 end
 function IsInRange(enemy, range, position, delay)
@@ -393,62 +404,62 @@ function OnTick()
         return
     end
     local orbwalkerMode = Orbwalker.GetMode()
-    local ____switch127 = orbwalkerMode
-    if ____switch127 == "Combo" then
-        goto ____switch127_case_0
-    elseif ____switch127 == "Harass" then
-        goto ____switch127_case_1
-    elseif ____switch127 == "Lasthit" then
-        goto ____switch127_case_2
-    elseif ____switch127 == "Waveclear" then
-        goto ____switch127_case_3
-    elseif ____switch127 == "Flee" then
-        goto ____switch127_case_4
-    elseif ____switch127 == "nil" then
-        goto ____switch127_case_5
+    local ____switch131 = orbwalkerMode
+    if ____switch131 == "Combo" then
+        goto ____switch131_case_0
+    elseif ____switch131 == "Harass" then
+        goto ____switch131_case_1
+    elseif ____switch131 == "Lasthit" then
+        goto ____switch131_case_2
+    elseif ____switch131 == "Waveclear" then
+        goto ____switch131_case_3
+    elseif ____switch131 == "Flee" then
+        goto ____switch131_case_4
+    elseif ____switch131 == "nil" then
+        goto ____switch131_case_5
     end
-    goto ____switch127_end
-    ::____switch127_case_0::
+    goto ____switch131_end
+    ::____switch131_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch127_end
+            goto ____switch131_end
         end
     end
-    ::____switch127_case_1::
+    ::____switch131_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch127_end
+            goto ____switch131_end
         end
     end
-    ::____switch127_case_2::
+    ::____switch131_case_2::
     do
         do
-            goto ____switch127_end
+            goto ____switch131_end
         end
     end
-    ::____switch127_case_3::
+    ::____switch131_case_3::
     do
         do
-            goto ____switch127_end
+            goto ____switch131_end
         end
     end
-    ::____switch127_case_4::
+    ::____switch131_case_4::
     do
         do
             Flee()
-            goto ____switch127_end
+            goto ____switch131_end
         end
     end
-    ::____switch127_case_5::
+    ::____switch131_case_5::
     do
         do
             Auto(allies, enemies)
-            goto ____switch127_end
+            goto ____switch131_end
         end
     end
-    ::____switch127_end::
+    ::____switch131_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -475,6 +486,7 @@ qSpeed = 1400
 ballRadius = 80
 wRadius = 225
 eSpeed = 1850
+eRange = 1120
 rRadius = 415
 rDelay = 0.5
 baseDelay = 0.25
@@ -531,7 +543,7 @@ function InitMenu()
                 function()
                     Menu.Checkbox("qCombo", "Combo", true)
                     Menu.Checkbox("qHarass", "Harass", true)
-                    Menu.Checkbox("qKs", "Kill Steal", true)
+                    Menu.Checkbox("qDraw", "Draw Range", true)
                 end
             )
             Menu.NewTree(
@@ -541,7 +553,6 @@ function InitMenu()
                     Menu.Checkbox("wCombo", "Combo", true)
                     Menu.Checkbox("wHarass", "Harass", true)
                     Menu.Checkbox("wFlee", "Flee", true)
-                    Menu.Checkbox("wKs", "Kill Steal", true)
                     Menu.Checkbox("wAuto", "Auto", true)
                 end
             )
@@ -552,7 +563,6 @@ function InitMenu()
                     Menu.Checkbox("eCombo", "Combo", true)
                     Menu.Checkbox("eHarass", "Harass", false)
                     Menu.Checkbox("eFlee", "Flee", true)
-                    Menu.Checkbox("eKs", "Kill Steal", true)
                     Menu.Checkbox("eShieldSelf", "Protect self", true)
                     Menu.NewTree(
                         "eProtectList",
@@ -564,6 +574,7 @@ function InitMenu()
                         end
                     )
                     Menu.Checkbox("eShieldAllies", "Protect allies", true)
+                    Menu.Checkbox("eDraw", "Draw Range", false)
                 end
             )
             Menu.NewTree(
@@ -571,7 +582,6 @@ function InitMenu()
                 "R Options",
                 function()
                     Menu.Checkbox("rCombo", "Combo", true)
-                    Menu.Checkbox("rKill", "Kill Steal", true)
                     Menu.Checkbox("rAuto", "Auto", true)
                     Menu.Slider("rRadius", "Radius", 390, 300, 415, 5)
                     Menu.Checkbox("eToR", "E to R", true)
@@ -607,7 +617,7 @@ function InitMenu()
                             end
                         end
                     )
-                    Menu.Checkbox("rBlock", "Cancel if no hit", true)
+                    Menu.Checkbox("rBlock", "Block manual cast if no hit", true)
                     Menu.Checkbox("rDraw", "Draw Range", true)
                 end
             )

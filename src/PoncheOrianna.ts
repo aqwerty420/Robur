@@ -1,19 +1,16 @@
 /*
 
-release:
+TO_DO NEXT:
 
 KS
-Finish Draw
-
-
-then:
+R Combo Kill
 Harass mana slider
 E To ally dmg
 Spell Lane Clear
 Spell Last Hit + Tear farm
 
 
-maybe:
+TO_DO MAYBE:
 
 QR Cancel
 Q AOE ball not on self
@@ -59,6 +56,7 @@ const qSpeed = 1400;
 const ballRadius = 80;
 const wRadius = 225;
 const eSpeed = 1850;
+const eRange = 1120;
 const rRadius = 415;
 const rDelay = 0.5;
 const baseDelay = 0.25;
@@ -189,14 +187,14 @@ function InitMenu(): void {
       Menu.Checkbox('qCombo', 'Combo', true);
       Menu.Checkbox('qHarass', 'Harass', true);
       //Menu.Checkbox('eToQ', 'E to Q', true);
-      Menu.Checkbox('qKs', 'Kill Steal', true);
-      //Menu.Checkbox('qDraw', 'Draw Range', true);
+      //Menu.Checkbox('qKs', 'Kill Steal', true);
+      Menu.Checkbox('qDraw', 'Draw Range', true);
     });
     Menu.NewTree('w', 'W Options', function () {
       Menu.Checkbox('wCombo', 'Combo', true);
       Menu.Checkbox('wHarass', 'Harass', true);
       Menu.Checkbox('wFlee', 'Flee', true);
-      Menu.Checkbox('wKs', 'Kill Steal', true);
+      //Menu.Checkbox('wKs', 'Kill Steal', true);
       Menu.Checkbox('wAuto', 'Auto', true);
       //Menu.Checkbox('wDraw', 'Draw Range', true);
     });
@@ -204,7 +202,7 @@ function InitMenu(): void {
       Menu.Checkbox('eCombo', 'Combo', true);
       Menu.Checkbox('eHarass', 'Harass', false);
       Menu.Checkbox('eFlee', 'Flee', true);
-      Menu.Checkbox('eKs', 'Kill Steal', true);
+      //Menu.Checkbox('eKs', 'Kill Steal', true);
       Menu.Checkbox('eShieldSelf', 'Protect self', true);
       Menu.NewTree('eProtectList', 'Protect ally :', function () {
         for (const allyName of alliesName) {
@@ -212,11 +210,11 @@ function InitMenu(): void {
         }
       });
       Menu.Checkbox('eShieldAllies', 'Protect allies', true);
-      //Menu.Checkbox('eDraw', 'Draw Range', false);
+      Menu.Checkbox('eDraw', 'Draw Range', false);
     });
     Menu.NewTree('r', 'R Options', function () {
       Menu.Checkbox('rCombo', 'Combo', true);
-      Menu.Checkbox('rKill', 'Kill Steal', true);
+      //Menu.Checkbox('rKill', 'Kill Steal', true);
       Menu.Checkbox('rAuto', 'Auto', true);
       Menu.Slider('rRadius', 'Radius', 390, 300, 415, 5);
       Menu.Checkbox('eToR', 'E to R', true);
@@ -240,7 +238,7 @@ function InitMenu(): void {
           });
         }
       });
-      Menu.Checkbox('rBlock', 'Cancel if no hit', true);
+      Menu.Checkbox('rBlock', 'Block manual cast if no hit', true);
       Menu.Checkbox('rDraw', 'Draw Range', true);
     });
     Menu.Checkbox('ballDraw', 'Ball Draw', true);
@@ -405,13 +403,23 @@ function OnGapclose(source: AIHeroClient, dash: DashInstance) {
 }
 
 function OnDraw(): void {
-  const drawBallPos = Geometry.Vector(ballPosition);
-  const t = Core.Game.GetTime() % 0.8;
-  drawBallPos.y += 100;
-  drawBallPos.y += t < 0.4 ? -50.0 * t : -(20.0 - (t - 0.4) * 50.0);
-
-  if (Menu.Get('ballDraw') && !ballMoving) {
-    Core.Renderer.DrawCircle3D(drawBallPos, 100, 10);
+  if (!ballMoving) {
+    if (Menu.Get('ballDraw')) {
+      const drawBallPos = Geometry.Vector(ballPosition);
+      const t = Core.Game.GetTime() % 0.8;
+      drawBallPos.y += 100;
+      drawBallPos.y += t < 0.4 ? -50.0 * t : -(20.0 - (t - 0.4) * 50.0);
+      Core.Renderer.DrawCircle3D(drawBallPos, 100, 10, 10);
+    }
+    if (Menu.Get('rDraw')) {
+      Core.Renderer.DrawCircle3D(ballPosition, rRadius, 10);
+    }
+  }
+  if (Menu.Get('qDraw')) {
+    Core.Renderer.DrawCircle3D(Player.Position, qRange, 10);
+  }
+  if (Menu.Get('eDraw')) {
+    Core.Renderer.DrawCircle3D(Player.Position, eRange, 10);
   }
 }
 
