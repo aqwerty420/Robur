@@ -19,12 +19,6 @@ QR ball not on self
 
 */
 
-interface EventToRegister {
-  id: string;
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  callback: Function;
-}
-
 if (Player.CharName != 'Orianna') {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -34,7 +28,7 @@ if (Player.CharName != 'Orianna') {
 /*
 _G.CoreEx.AutoUpdate(
   'https://raw.githubusercontent.com/aqwerty420/Robur/main/PoncheOrianna.lua',
-  '1.0.0'
+  '1.1.0'
 );
 */
 
@@ -57,21 +51,15 @@ const ballAllyBuffName = 'orianaghost';
 const ballObjName = 'TheDoomBall';
 const ballMissileNames: string[] = ['OrianaIzuna', 'OrianaRedact'];
 
-//const ballMaxRange = 1250;
-const collisions: CollisionsPossible = { WindWall: true, Wall: true };
-const qRange = 815;
+const qRange = 825;
 const qSpeed = 1400;
 const ballRadius = 80;
-const wRadius = 225;
-const eSpeed = 1850;
-const eRange = 1120;
 const rRadius = 415;
-const rDelay = 0.5;
 const baseDelay = 0.25;
 
 const mathHuge = _G.math.huge;
 
-let ballPosition: Vector = Geometry.Vector();
+let ballObj: AIBaseClient = Player;
 let ballMoving = false;
 let ballOnSelf = false;
 
@@ -83,44 +71,49 @@ const qInput: PredictionInput = {
   Radius: ballRadius,
   Type: SpellType.Linear,
   UseHitbox: true,
-  Collisions: collisions,
+  Collisions: { WindWall: true },
 };
 
 const Q = SpellLib.Skillshot(qInput);
 
-const W = SpellLib.Active({
+const wInput = {
   Slot: SpellSlots.W,
   Range: 0,
   Speed: mathHuge,
   Delay: baseDelay,
-  Radius: wRadius,
+  Radius: 225,
   Type: SpellType.Circular,
   UseHitbox: false,
-});
+};
 
-const E = SpellLib.Targeted({
+const W = SpellLib.Active(wInput);
+
+const eInput = {
   Slot: SpellSlots.E,
   Range: 1120,
-  Speed: eSpeed,
+  Speed: 1850,
   Delay: baseDelay,
   Radius: ballRadius,
   Type: SpellType.Linear,
   UseHitbox: true,
-  Collisions: collisions, // WIP not 100% sure
-});
+  Collisions: { WindWall: true },
+};
 
-const R = SpellLib.Active({
+const E = SpellLib.Targeted(eInput);
+
+const rInput = {
   Slot: SpellSlots.R,
   Range: 0,
   Speed: mathHuge,
-  Delay: rDelay,
+  Delay: 0.5,
   Radius: rRadius,
   Type: SpellType.Circular,
   UseHitbox: false,
-  Collisions: collisions,
-});
+};
 
-const QR = SpellLib.Skillshot({
+const R = SpellLib.Active(rInput);
+
+const qrInput = {
   Slot: SpellSlots.Q,
   Range: qRange,
   Speed: qSpeed,
@@ -128,8 +121,10 @@ const QR = SpellLib.Skillshot({
   Radius: rRadius,
   Type: SpellType.Circular,
   UseHitbox: false,
-  Collisions: collisions,
-});
+  Collisions: { WindWall: true },
+};
+
+const QR = SpellLib.Skillshot(qrInput);
 
 const events: EventToRegister[] = [
   {
@@ -260,19 +255,19 @@ function InitEvents(): void {
   }
 }
 
-function RetrieveBallPosition(): void {
+function RetrieveballObj(): void {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, obj] of pairs(
     ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Minions)
   )) {
     if (IsBall(obj)) {
-      ballPosition = obj.Position;
+      ballObj = obj as AIBaseClient;
       return;
     }
   }
 }
 
-function IsBall(obj: GameObject) {
+function IsBall(obj: GameObject): boolean {
   return obj.IsAlly && obj.Name == ballObjName;
 }
 
@@ -287,17 +282,17 @@ function GetValidNearbyHeroes(team: AllyOrEnemy): AIHeroClient[] {
   return heroes;
 }
 
-function SetBallPosition(allies: AIHeroClient[]): void {
+function SetballObj(allies: AIHeroClient[]): void {
   if (Player.GetBuff(ballSelfBuffName)) {
     ballMoving = false;
-    ballPosition = Player.Position;
+    ballObj = Player;
     ballOnSelf = true;
     return;
   }
   for (let i = 0; i < allies.length; i++) {
     if (allies[i].GetBuff(ballAllyBuffName)) {
       ballMoving = false;
-      ballPosition = allies[i].Position;
+      ballObj = allies[i];
       ballOnSelf = false;
       return;
     }
@@ -312,7 +307,7 @@ function OnCreateObject(obj: GameObject): void {
   }
   if (IsBall(obj)) {
     ballMoving = false;
-    ballPosition = obj.Position;
+    ballObj = obj as AIBaseClient;
     return;
   }
 }
@@ -321,7 +316,14 @@ function OnCastSpell(args: OnCastSpellArgs): void {
   if (Menu.Get('rBlock') && args.Slot === SpellSlots.R) {
     const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
     for (let i = 0; i < enemies.length; i++) {
-      if (IsInRange(enemies[i], Menu.Get('rRadius'), ballPosition, rDelay)) {
+      if (
+        IsInRange(
+          enemies[i],
+          Menu.Get('rRadius'),
+          ballObj.Position,
+          rInput.Delay
+        )
+      ) {
         return;
       }
     }
@@ -329,7 +331,7 @@ function OnCastSpell(args: OnCastSpellArgs): void {
   }
 }
 
-function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
+function OnProcessSpell(source: AIHeroClient, spell: SpellCast): void {
   if (
     !ballMoving &&
     source.IsEnemy &&
@@ -353,7 +355,7 @@ function OnProcessSpell(source: AIHeroClient, spell: SpellCast) {
   }
 }
 
-function IsToCancel(enemyName: string, slot: number) {
+function IsToCancel(enemyName: string, slot: number): boolean {
   if (slot === SpellSlots.Q) {
     return Menu.Get(enemyName + 'CancelQ');
   }
@@ -374,18 +376,18 @@ function OnInterruptibleSpell(
   danger: number,
   endTime: number,
   canMove: boolean
-) {
+): void {
   if (
     Menu.Get('rCancel') &&
     source.IsEnemy &&
     source.IsHero &&
     IsToCancel(source.CharName, spell.Slot) &&
-    ballPosition.Distance(source.Position) <= Menu.Get('rRadius')
+    ballObj.Distance(source.Position) <= Menu.Get('rRadius')
   ) {
     if (!canMove) {
       R.Cast();
     } else if (
-      source.FastPrediction(rDelay).Distance(ballPosition) <=
+      source.FastPrediction(rInput.Delay).Distance(ballObj) <=
       Menu.Get('rRadius')
     ) {
       R.Cast();
@@ -393,7 +395,7 @@ function OnInterruptibleSpell(
   }
 }
 
-function OnGapclose(source: AIHeroClient, dash: DashInstance) {
+function OnGapclose(source: AIHeroClient, dash: DashInstance): void {
   if (
     Menu.Get('eToR') &&
     (Menu.Get('rAuto') ||
@@ -413,21 +415,21 @@ function OnGapclose(source: AIHeroClient, dash: DashInstance) {
 function OnDraw(): void {
   if (!ballMoving) {
     if (Menu.Get('ballDraw')) {
-      const drawBallPos = Geometry.Vector(ballPosition);
+      const drawBallPos = Geometry.Vector(ballObj.Position);
       const t = Core.Game.GetTime() % 0.8;
       drawBallPos.y += 100;
       drawBallPos.y += t < 0.4 ? -50.0 * t : -(20.0 - (t - 0.4) * 50.0);
       Core.Renderer.DrawCircle3D(drawBallPos, 100, 10, 10);
     }
     if (Menu.Get('rDraw')) {
-      Core.Renderer.DrawCircle3D(ballPosition, rRadius, 10);
+      Core.Renderer.DrawCircle3D(ballObj.Position, rInput.Radius, 10);
     }
   }
   if (Menu.Get('qDraw')) {
-    Core.Renderer.DrawCircle3D(Player.Position, qRange, 10);
+    Core.Renderer.DrawCircle3D(Player.Position, qInput.Range, 10);
   }
   if (Menu.Get('eDraw')) {
-    Core.Renderer.DrawCircle3D(Player.Position, eRange, 10);
+    Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10);
   }
 }
 
@@ -443,7 +445,11 @@ function IsInRange(
   return enemyPos.Distance(position) <= range;
 }
 
-function getValuePos(enemies: AIHeroClient[], delay: number, position: Vector) {
+function getValuePos(
+  enemies: AIHeroClient[],
+  delay: number,
+  position: Vector
+): number {
   let count = 0;
   for (let i = 0; i < enemies.length; i++) {
     const enemy = enemies[i].AsHero;
@@ -456,45 +462,40 @@ function getValuePos(enemies: AIHeroClient[], delay: number, position: Vector) {
 
 function tryQ(enemies: AIHeroClient[]): boolean {
   if (!Q.IsReady() || Q.GetManaCost() > Player.Mana) return false;
-  if (enemies.length > 1 && ballOnSelf) {
+  Q.SetRangeCheckObj(ballObj);
+  if (enemies.length > 1) {
     const castPos = Q.GetBestLinearCastPos(enemies);
-    if (castPos[1] >= 2) {
+    if (castPos[1] > 1) {
       return Q.Cast(castPos[0]);
     }
   }
   const target = Q.GetTarget();
-  if (!target) return;
-  const result = Libs.Prediction.GetPredictedPosition(
-    target,
-    qInput,
-    ballPosition
-  );
-  if (result && result.HitChance >= Enums.HitChance.Collision)
-    return Q.Cast(result.CastPosition);
-  return false;
+  if (!target) return false;
+  return Q.Cast(target);
 }
 
 function tryW(enemies: AIHeroClient[]): boolean {
   if (!W.IsReady() || W.GetManaCost() > Player.Mana) return false;
   for (let i = 0; i < enemies.length; i++) {
-    if (IsInRange(enemies[i], wRadius, ballPosition, baseDelay)) {
+    if (IsInRange(enemies[i], wInput.Radius, ballObj.Position, baseDelay)) {
       return W.Cast();
     }
   }
   return false;
 }
 
-function tryE(enemies: AIHeroClient[]) {
+function tryE(enemies: AIHeroClient[]): boolean {
   if (!E.IsReady || E.GetManaCost() > Player.Mana) return false;
   for (let i = 0; i < enemies.length; i++) {
-    const reachDelay = ballPosition.Distance(enemies[i]) / eSpeed + baseDelay;
+    const reachDelay =
+      ballObj.Position.Distance(enemies[i]) / eInput.Speed + baseDelay;
     const enemyPos = enemies[i].FastPrediction(reachDelay);
     const distance = enemyPos.LineDistance(
-      ballPosition,
+      ballObj.Position,
       Player.Position,
       false
     );
-    if (distance <= ballRadius) {
+    if (distance <= eInput.Radius) {
       return E.Cast(Player);
     }
   }
@@ -515,7 +516,8 @@ function getBestER(
   let bestCount = 0;
   for (let i = 0; i < allies.length; i++) {
     let count = 0;
-    const reachDelay = ballPosition.Distance(allies[i]) / eSpeed + baseDelay;
+    const reachDelay =
+      ballObj.Position.Distance(allies[i]) / eInput.Speed + baseDelay;
     const allyPosition = allies[i].FastPrediction(reachDelay);
     for (let j = 0; j < enemies.length; j++) {
       const enemy = enemies[j].AsHero;
@@ -541,29 +543,27 @@ function getQR(
   )
     return $multi(null, 0);
   let count = 0;
-  if (ballOnSelf) {
-    const castPos = QR.GetBestCircularCastPos(enemies);
-    for (let j = 0; j < enemies.length; j++) {
-      const enemy = enemies[j].AsHero;
-      if (
-        IsInRange(
-          enemy,
-          Menu.Get('rRadius'),
-          castPos[0],
-          baseDelay + ballPosition.Distance(castPos[0]) / qSpeed
-        )
-      ) {
-        count += Menu.Get('rWeight' + enemy.CharName);
-      }
+  QR.SetRangeCheckObj(ballObj);
+  const castPos = QR.GetBestCircularCastPos(enemies);
+  for (let j = 0; j < enemies.length; j++) {
+    const enemy = enemies[j].AsHero;
+    if (
+      IsInRange(
+        enemy,
+        Menu.Get('rRadius'),
+        castPos[0],
+        baseDelay + ballObj.Distance(castPos[0]) / qSpeed
+      )
+    ) {
+      count += Menu.Get('rWeight' + enemy.CharName);
     }
-    return $multi(castPos[0], count);
   }
-  return $multi(null, 0);
+  return $multi(castPos[0], count);
 }
 
-function tryR(allies: AIHeroClient[], enemies: AIHeroClient[]) {
+function tryR(allies: AIHeroClient[], enemies: AIHeroClient[]): boolean {
   if (!R.IsReady() || R.GetManaCost() > Player.Mana) return false;
-  const rResult = getValuePos(enemies, rDelay, ballPosition);
+  const rResult = getValuePos(enemies, rInput.Delay, ballObj.Position);
   const qrResult = getQR(enemies);
   const erResult = getBestER(allies, enemies);
 
@@ -633,7 +633,7 @@ function Flee(): void {
 
 function OnTick(): void {
   const allies = GetValidNearbyHeroes(AllyOrEnemy.Ally);
-  SetBallPosition(allies);
+  SetballObj(allies);
 
   if (
     ballMoving ||
@@ -683,6 +683,9 @@ OnLoad = () => {
   InitLog();
   InitMenu();
   InitEvents();
-  RetrieveBallPosition();
+  RetrieveballObj();
   return true;
 };
+
+// eslint-disable-next-line prettier/prettier
+export { };

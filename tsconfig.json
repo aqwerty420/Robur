@@ -6,16 +6,13 @@
     ],
     "noImplicitUseStrict": true,
     "moduleResolution": "node",
-    
-    "types": ["typescript-to-lua/language-extensions", "lua-types/jit"]
+    "types": ["typescript-to-lua/language-extensions", "lua-types/jit"],
+    "outDir": "./output",
   },
   "tstl": {
     "luaTarget": "JIT",
     "noHeader": true,
     "noImplicitSelf": true,
-    "luaLibImport": "inline",
-    //"buildMode": "default",
-    //"luaBundleEntry": "src/script.ts",
-    //"luaBundle": "output/script.lua"
+    "luaLibImport": "inline"
   }
 }

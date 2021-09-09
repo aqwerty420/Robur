@@ -27,6 +27,8 @@ function __TS__ArrayPush(arr, ...)
     return #arr
 end
 
+local ____exports = {}
+local Core, ObjectManager, Game, Geometry, SpellSlots, Orbwalker, Menu, TargetSelector, ballSelfBuffName, ballAllyBuffName, ballObjName, ballMissileNames, qSpeed, baseDelay, ballObj, ballMoving, ballOnSelf, qInput, Q, wInput, W, eInput, E, rInput, R, QR, IsBall, GetValidNearbyHeroes, SetballObj, OnCreateObject, OnCastSpell, OnProcessSpell, IsToCancel, OnInterruptibleSpell, OnGapclose, OnDraw, IsInRange, getValuePos, tryQ, tryW, tryE, getBestER, getQR, tryR, Auto, Combo, Harass, Flee, OnTick
 function IsBall(obj)
     return obj.IsAlly and (obj.Name == ballObjName)
 end
@@ -41,10 +43,10 @@ function GetValidNearbyHeroes(team)
     end
     return heroes
 end
-function SetBallPosition(allies)
+function SetballObj(allies)
     if Player:GetBuff(ballSelfBuffName) then
         ballMoving = false
-        ballPosition = Player.Position
+        ballObj = Player
         ballOnSelf = true
         return
     end
@@ -53,7 +55,7 @@ function SetBallPosition(allies)
         while i < #allies do
             if allies[i + 1]:GetBuff(ballAllyBuffName) then
                 ballMoving = false
-                ballPosition = allies[i + 1].Position
+                ballObj = allies[i + 1]
                 ballOnSelf = false
                 return
             end
@@ -69,7 +71,7 @@ function OnCreateObject(obj)
     end
     if IsBall(obj) then
         ballMoving = false
-        ballPosition = obj.Position
+        ballObj = obj
         return
     end
 end
@@ -82,8 +84,8 @@ function OnCastSpell(args)
                 if IsInRange(
                     enemies[i + 1],
                     Menu.Get("rRadius"),
-                    ballPosition,
-                    rDelay
+                    ballObj.Position,
+                    rInput.Delay
                 ) then
                     return
                 end
@@ -123,10 +125,10 @@ function IsToCancel(enemyName, slot)
     end
 end
 function OnInterruptibleSpell(source, spell, danger, endTime, canMove)
-    if (((Menu.Get("rCancel") and source.IsEnemy) and source.IsHero) and IsToCancel(source.CharName, spell.Slot)) and (ballPosition:Distance(source.Position) <= Menu.Get("rRadius")) then
+    if (((Menu.Get("rCancel") and source.IsEnemy) and source.IsHero) and IsToCancel(source.CharName, spell.Slot)) and (ballObj:Distance(source.Position) <= Menu.Get("rRadius")) then
         if not canMove then
             R:Cast()
-        elseif source:FastPrediction(rDelay):Distance(ballPosition) <= Menu.Get("rRadius") then
+        elseif source:FastPrediction(rInput.Delay):Distance(ballObj) <= Menu.Get("rRadius") then
             R:Cast()
         end
     end
@@ -144,21 +146,21 @@ end
 function OnDraw()
     if not ballMoving then
         if Menu.Get("ballDraw") then
-            local drawBallPos = Geometry.Vector(ballPosition)
+            local drawBallPos = Geometry.Vector(ballObj.Position)
             local t = Core.Game.GetTime() % 0.8
             drawBallPos.y = drawBallPos.y + 100
             drawBallPos.y = drawBallPos.y + (((t < 0.4) and (function() return -50 * t end)) or (function() return -(20 - ((t - 0.4) * 50)) end))()
             Core.Renderer.DrawCircle3D(drawBallPos, 100, 10, 10)
         end
         if Menu.Get("rDraw") then
-            Core.Renderer.DrawCircle3D(ballPosition, rRadius, 10)
+            Core.Renderer.DrawCircle3D(ballObj.Position, rInput.Radius, 10)
         end
     end
     if Menu.Get("qDraw") then
-        Core.Renderer.DrawCircle3D(Player.Position, qRange, 10)
+        Core.Renderer.DrawCircle3D(Player.Position, qInput.Range, 10)
     end
     if Menu.Get("eDraw") then
-        Core.Renderer.DrawCircle3D(Player.Position, eRange, 10)
+        Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10)
     end
 end
 function IsInRange(enemy, range, position, delay)
@@ -194,23 +196,20 @@ function tryQ(enemies)
     if (not Q:IsReady()) or (Q:GetManaCost() > Player.Mana) then
         return false
     end
-    if (#enemies > 1) and ballOnSelf then
+    Q:SetRangeCheckObj(ballObj)
+    if #enemies > 1 then
         local castPos = {
             Q:GetBestLinearCastPos(enemies)
         }
-        if castPos[2] >= 2 then
+        if castPos[2] > 1 then
             return Q:Cast(castPos[1])
         end
     end
     local target = Q:GetTarget()
     if not target then
-        return
+        return false
     end
-    local result = Libs.Prediction.GetPredictedPosition(target, qInput, ballPosition)
-    if result and (result.HitChance >= Enums.HitChance.Collision) then
-        return Q:Cast(result.CastPosition)
-    end
-    return false
+    return Q:Cast(target)
 end
 function tryW(enemies)
     if (not W:IsReady()) or (W:GetManaCost() > Player.Mana) then
@@ -219,7 +218,7 @@ function tryW(enemies)
     do
         local i = 0
         while i < #enemies do
-            if IsInRange(enemies[i + 1], wRadius, ballPosition, baseDelay) then
+            if IsInRange(enemies[i + 1], wInput.Radius, ballObj.Position, baseDelay) then
                 return W:Cast()
             end
             i = i + 1
@@ -234,10 +233,10 @@ function tryE(enemies)
     do
         local i = 0
         while i < #enemies do
-            local reachDelay = (ballPosition:Distance(enemies[i + 1]) / eSpeed) + baseDelay
+            local reachDelay = (ballObj.Position:Distance(enemies[i + 1]) / eInput.Speed) + baseDelay
             local enemyPos = enemies[i + 1]:FastPrediction(reachDelay)
-            local distance = enemyPos:LineDistance(ballPosition, Player.Position, false)
-            if distance <= ballRadius then
+            local distance = enemyPos:LineDistance(ballObj.Position, Player.Position, false)
+            if distance <= eInput.Radius then
                 return E:Cast(Player)
             end
             i = i + 1
@@ -255,7 +254,7 @@ function getBestER(allies, enemies)
         local i = 0
         while i < #allies do
             local count = 0
-            local reachDelay = (ballPosition:Distance(allies[i + 1]) / eSpeed) + baseDelay
+            local reachDelay = (ballObj.Position:Distance(allies[i + 1]) / eInput.Speed) + baseDelay
             local allyPosition = allies[i + 1]:FastPrediction(reachDelay)
             do
                 local j = 0
@@ -286,34 +285,32 @@ function getQR(enemies)
         return nil, 0
     end
     local count = 0
-    if ballOnSelf then
-        local castPos = {
-            QR:GetBestCircularCastPos(enemies)
-        }
-        do
-            local j = 0
-            while j < #enemies do
-                local enemy = enemies[j + 1].AsHero
-                if IsInRange(
-                    enemy,
-                    Menu.Get("rRadius"),
-                    castPos[1],
-                    baseDelay + (ballPosition:Distance(castPos[1]) / qSpeed)
-                ) then
-                    count = count + Menu.Get("rWeight" .. enemy.CharName)
-                end
-                j = j + 1
+    QR:SetRangeCheckObj(ballObj)
+    local castPos = {
+        QR:GetBestCircularCastPos(enemies)
+    }
+    do
+        local j = 0
+        while j < #enemies do
+            local enemy = enemies[j + 1].AsHero
+            if IsInRange(
+                enemy,
+                Menu.Get("rRadius"),
+                castPos[1],
+                baseDelay + (ballObj:Distance(castPos[1]) / qSpeed)
+            ) then
+                count = count + Menu.Get("rWeight" .. enemy.CharName)
             end
+            j = j + 1
         end
-        return castPos[1], count
     end
-    return nil, 0
+    return castPos[1], count
 end
 function tryR(allies, enemies)
     if (not R:IsReady()) or (R:GetManaCost() > Player.Mana) then
         return false
     end
-    local rResult = getValuePos(enemies, rDelay, ballPosition)
+    local rResult = getValuePos(enemies, rInput.Delay, ballObj.Position)
     local qrResult = {
         getQR(enemies)
     }
@@ -395,7 +392,7 @@ function Flee()
 end
 function OnTick()
     local allies = GetValidNearbyHeroes("ally")
-    SetBallPosition(allies)
+    SetballObj(allies)
     if ((((ballMoving or Player.IsDead) or Player.IsRecalling) or (not Player.CanCast)) or Game.IsMinimized()) or Game.IsChatOpen() then
         return
     end
@@ -407,53 +404,53 @@ function OnTick()
     if #enemies == 0 then
         return
     end
-    local ____switch132 = orbwalkerMode
-    if ____switch132 == "Combo" then
-        goto ____switch132_case_0
-    elseif ____switch132 == "Harass" then
-        goto ____switch132_case_1
-    elseif ____switch132 == "Lasthit" then
-        goto ____switch132_case_2
-    elseif ____switch132 == "Waveclear" then
-        goto ____switch132_case_3
-    elseif ____switch132 == "nil" then
-        goto ____switch132_case_4
+    local ____switch130 = orbwalkerMode
+    if ____switch130 == "Combo" then
+        goto ____switch130_case_0
+    elseif ____switch130 == "Harass" then
+        goto ____switch130_case_1
+    elseif ____switch130 == "Lasthit" then
+        goto ____switch130_case_2
+    elseif ____switch130 == "Waveclear" then
+        goto ____switch130_case_3
+    elseif ____switch130 == "nil" then
+        goto ____switch130_case_4
     end
-    goto ____switch132_end
-    ::____switch132_case_0::
+    goto ____switch130_end
+    ::____switch130_case_0::
     do
         do
             Combo(allies, enemies)
-            goto ____switch132_end
+            goto ____switch130_end
         end
     end
-    ::____switch132_case_1::
+    ::____switch130_case_1::
     do
         do
             Harass(allies, enemies)
-            goto ____switch132_end
+            goto ____switch130_end
         end
     end
-    ::____switch132_case_2::
+    ::____switch130_case_2::
     do
         do
-            goto ____switch132_end
+            goto ____switch130_end
         end
     end
-    ::____switch132_case_3::
+    ::____switch130_case_3::
     do
         do
-            goto ____switch132_end
+            goto ____switch130_end
         end
     end
-    ::____switch132_case_4::
+    ::____switch130_case_4::
     do
         do
             Auto(allies, enemies)
-            goto ____switch132_end
+            goto ____switch130_end
         end
     end
-    ::____switch132_end::
+    ::____switch130_end::
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -462,44 +459,43 @@ Core = _G.CoreEx
 ObjectManager = Core.ObjectManager
 Game = Core.Game
 Geometry = Core.Geometry
-Enums = Core.Enums
+local Enums = Core.Enums
 SpellSlots = Enums.SpellSlots
-Events = Enums.Events
-Libs = _G.Libs
+local Events = Enums.Events
+local Libs = _G.Libs
 Orbwalker = Libs.Orbwalker
 Menu = Libs.NewMenu
-SpellLib = Libs.Spell
+local SpellLib = Libs.Spell
 TargetSelector = Libs.TargetSelector()
 ballSelfBuffName = "orianaghostself"
 ballAllyBuffName = "orianaghost"
 ballObjName = "TheDoomBall"
 ballMissileNames = {"OrianaIzuna", "OrianaRedact"}
-collisions = {WindWall = true, Wall = true}
-qRange = 815
+local qRange = 825
 qSpeed = 1400
-ballRadius = 80
-wRadius = 225
-eSpeed = 1850
-eRange = 1120
-rRadius = 415
-rDelay = 0.5
+local ballRadius = 80
+local rRadius = 415
 baseDelay = 0.25
-mathHuge = _G.math.huge
-ballPosition = Geometry.Vector()
+local mathHuge = _G.math.huge
+ballObj = Player
 ballMoving = false
 ballOnSelf = false
-qInput = {Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = collisions}
+qInput = {Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = {WindWall = true}}
 Q = SpellLib.Skillshot(qInput)
-W = SpellLib.Active({Slot = SpellSlots.W, Range = 0, Speed = mathHuge, Delay = baseDelay, Radius = wRadius, Type = "Circular", UseHitbox = false})
-E = SpellLib.Targeted({Slot = SpellSlots.E, Range = 1120, Speed = eSpeed, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = collisions})
-R = SpellLib.Active({Slot = SpellSlots.R, Range = 0, Speed = mathHuge, Delay = rDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
-QR = SpellLib.Skillshot({Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = collisions})
-events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}, {id = Events.OnInterruptibleSpell, callback = OnInterruptibleSpell}, {id = Events.OnGapclose, callback = OnGapclose}}
-function InitLog()
+wInput = {Slot = SpellSlots.W, Range = 0, Speed = mathHuge, Delay = baseDelay, Radius = 225, Type = "Circular", UseHitbox = false}
+W = SpellLib.Active(wInput)
+eInput = {Slot = SpellSlots.E, Range = 1120, Speed = 1850, Delay = baseDelay, Radius = ballRadius, Type = "Linear", UseHitbox = true, Collisions = {WindWall = true}}
+E = SpellLib.Targeted(eInput)
+rInput = {Slot = SpellSlots.R, Range = 0, Speed = mathHuge, Delay = 0.5, Radius = rRadius, Type = "Circular", UseHitbox = false}
+R = SpellLib.Active(rInput)
+local qrInput = {Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
+QR = SpellLib.Skillshot(qrInput)
+local events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}, {id = Events.OnInterruptibleSpell, callback = OnInterruptibleSpell}, {id = Events.OnGapclose, callback = OnGapclose}}
+local function InitLog()
     module("PoncheOrianna", package.seeall, log.setup)
     clean.module("PoncheOrianna", clean.seeall, log.setup)
 end
-function InitMenu()
+local function InitMenu()
     local enemies = ObjectManager.Get("enemy", "heroes")
     local enemiesName = {}
     local allies = ObjectManager.Get("ally", "heroes")
@@ -619,7 +615,7 @@ function InitMenu()
         end
     )
 end
-function InitEvents()
+local function InitEvents()
     local eventManager = _G.CoreEx.EventManager
     do
         local i = 0
@@ -629,12 +625,12 @@ function InitEvents()
         end
     end
 end
-function RetrieveBallPosition()
+local function RetrieveballObj()
     for key, obj in pairs(
         ObjectManager.Get("ally", "minions")
     ) do
         if IsBall(obj) then
-            ballPosition = obj.Position
+            ballObj = obj
             return
         end
     end
@@ -643,6 +639,7 @@ OnLoad = function()
     InitLog()
     InitMenu()
     InitEvents()
-    RetrieveBallPosition()
+    RetrieveballObj()
     return true
 end
+return ____exports
