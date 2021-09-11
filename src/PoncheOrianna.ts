@@ -19,7 +19,7 @@ if (Player.CharName != 'Orianna') {
 /*
 _G.CoreEx.AutoUpdate(
   'https://raw.githubusercontent.com/aqwerty420/Robur/main/PoncheOrianna.lua',
-  '1.1.0'
+  '1.2.0'
 );
 */
 
