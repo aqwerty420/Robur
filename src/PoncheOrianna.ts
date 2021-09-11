@@ -2,20 +2,11 @@
 
 TO_DO NEXT:
 
-E To Q
-KS
 R Combo Kill
 Harass mana slider
-E To ally dmg
 Spell Lane Clear
 Spell Last Hit + Tear farm
-
-
-TO_DO MAYBE:
-
-QR Cancel
-Q AOE ball not on self
-QR ball not on self
+QR spell cancel
 
 */
 
@@ -46,15 +37,21 @@ const Menu = Libs.NewMenu;
 const SpellLib = Libs.Spell;
 const TargetSelector = Libs.TargetSelector();
 
-const ballSelfBuffName = 'orianaghostself';
-const ballAllyBuffName = 'orianaghost';
+const ballBuffNames: string[] = [
+  'orianaghostself',
+  'orianaghost',
+  'orianaredactshield',
+];
+//const ballSelfBuffName = 'orianaghostself';
+//const ballBuffGainName = 'orianaredactshield';
+//const ballAllyBuffName = 'orianaghost';
 const ballObjName = 'TheDoomBall';
 const ballMissileNames: string[] = ['OrianaIzuna', 'OrianaRedact'];
 
 const qRange = 825;
 const qSpeed = 1400;
 const ballRadius = 80;
-const rRadius = 415;
+const rRadius = 400;
 const baseDelay = 0.25;
 
 const mathHuge = _G.math.huge;
@@ -155,6 +152,10 @@ const events: EventToRegister[] = [
     id: Events.OnGapclose,
     callback: OnGapclose,
   },
+  {
+    id: Events.OnBuffGain,
+    callback: OnBuffGain,
+  },
 ];
 
 function InitLog(): void {
@@ -189,23 +190,20 @@ function InitMenu(): void {
     Menu.NewTree('q', 'Q Options', function () {
       Menu.Checkbox('qCombo', 'Combo', true);
       Menu.Checkbox('qHarass', 'Harass', true);
-      //Menu.Checkbox('eToQ', 'E to Q', true);
-      //Menu.Checkbox('qKs', 'Kill Steal', true);
+      Menu.Checkbox('eToQ', 'E to Q', true);
+      Menu.Slider('eToQDistance', 'Min dist EQ', 350, 0, 600, 50);
       Menu.Checkbox('qDraw', 'Draw Range', true);
     });
     Menu.NewTree('w', 'W Options', function () {
       Menu.Checkbox('wCombo', 'Combo', true);
       Menu.Checkbox('wHarass', 'Harass', true);
       Menu.Checkbox('wFlee', 'Flee', true);
-      //Menu.Checkbox('wKs', 'Kill Steal', true);
       Menu.Checkbox('wAuto', 'Auto', false);
-      //Menu.Checkbox('wDraw', 'Draw Range', true);
     });
     Menu.NewTree('e', 'E Options', function () {
       Menu.Checkbox('eCombo', 'Combo', true);
       Menu.Checkbox('eHarass', 'Harass', false);
       Menu.Checkbox('eFlee', 'Flee', true);
-      //Menu.Checkbox('eKs', 'Kill Steal', true);
       Menu.Checkbox('eShieldSelf', 'Protect self', true);
       Menu.NewTree('eProtectList', 'Protect ally :', function () {
         for (const allyName of alliesName) {
@@ -217,9 +215,8 @@ function InitMenu(): void {
     });
     Menu.NewTree('r', 'R Options', function () {
       Menu.Checkbox('rCombo', 'Combo', true);
-      //Menu.Checkbox('rKill', 'Kill Steal', true);
       Menu.Checkbox('rAuto', 'Auto', true);
-      Menu.Slider('rRadius', 'Radius', 390, 300, 415, 5);
+      Menu.Slider('rRadius', 'Radius', 390, 300, 400, 5);
       Menu.Checkbox('eToR', 'E to R', true);
       Menu.Checkbox('qToR', 'Q to R', true);
       Menu.NewTree('eWaight', 'Enemy value :', function () {
@@ -227,7 +224,7 @@ function InitMenu(): void {
           Menu.Slider('rWeight' + enemyName, enemyName, 1, 1, 3, 1);
         }
       });
-      Menu.Slider('rValue', 'Value to cast', 1, 1, enemiesCount * 3, 1);
+      Menu.Slider('rValue', 'Value to cast', 2, 1, enemiesCount * 3, 1);
       Menu.Checkbox('rCancel', 'Use to cancel spell', true);
       Menu.NewTree('SpellToCancel', 'Spell to cancel :', function () {
         Menu.Text('Even ticked a spell will be cancelled', false);
@@ -267,6 +264,23 @@ function RetrieveballObj(): void {
   }
 }
 
+function RetrieveBallBuff(): void {
+  if (Player.GetBuff(ballBuffNames[0])) {
+    ballObj = Player;
+    ballOnSelf = true;
+    return;
+  }
+  const allies = ObjectManager.Get(AllyOrEnemy.Ally, ObjectType.Heroes);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const [key, obj] of pairs(allies)) {
+    const ally = obj.AsHero;
+    if (!ally.IsMe && ally.GetBuff(ballBuffNames[1])) {
+      ballObj = ally;
+      ballOnSelf = false;
+    }
+  }
+}
+
 function IsBall(obj: GameObject): boolean {
   return obj.IsAlly && obj.Name == ballObjName;
 }
@@ -282,33 +296,30 @@ function GetValidNearbyHeroes(team: AllyOrEnemy): AIHeroClient[] {
   return heroes;
 }
 
-function SetballObj(allies: AIHeroClient[]): void {
-  if (Player.GetBuff(ballSelfBuffName)) {
-    ballMoving = false;
-    ballObj = Player;
-    ballOnSelf = true;
-    return;
-  }
-  for (let i = 0; i < allies.length; i++) {
-    if (allies[i].GetBuff(ballAllyBuffName)) {
-      ballMoving = false;
-      ballObj = allies[i];
-      ballOnSelf = false;
-      return;
-    }
-  }
-}
-
 function OnCreateObject(obj: GameObject): void {
   if (obj.Name === ballMissileNames[0] || obj.Name === ballMissileNames[1]) {
     ballOnSelf = false;
     ballMoving = true;
+    ballObj = obj as AIBaseClient;
     return;
   }
   if (IsBall(obj)) {
     ballMoving = false;
-    ballObj = obj as AIBaseClient;
+    ballObj = obj.AsMinion;
+  }
+}
+
+function OnBuffGain(obj: GameObject, buff: BuffInst) {
+  if (obj.IsMe && buff.Name === ballBuffNames[0]) {
+    ballOnSelf = true;
+    ballMoving = false;
+    ballObj = obj.AsHero;
     return;
+  }
+  if (obj.IsHero && obj.IsAlly && ballBuffNames[2] === buff.Name) {
+    ballMoving = false;
+    ballOnSelf = obj.IsMe;
+    ballObj = obj.AsHero;
   }
 }
 
@@ -334,8 +345,8 @@ function OnCastSpell(args: OnCastSpellArgs): void {
 function OnProcessSpell(source: AIHeroClient, spell: SpellCast): void {
   if (
     !ballMoving &&
-    source.IsEnemy &&
     source.IsHero &&
+    source.IsEnemy &&
     spell.Target &&
     !spell.IsBasicAttack &&
     spell.Target.IsHero &&
@@ -350,7 +361,6 @@ function OnProcessSpell(source: AIHeroClient, spell: SpellCast): void {
     const target = spell.Target.AsHero;
     if (Menu.Get('eShield' + target.CharName) && E.CanCast(target)) {
       E.Cast(target);
-      return;
     }
   }
 }
@@ -379,6 +389,7 @@ function OnInterruptibleSpell(
 ): void {
   if (
     Menu.Get('rCancel') &&
+    !ballMoving &&
     source.IsEnemy &&
     source.IsHero &&
     IsToCancel(source.CharName, spell.Slot) &&
@@ -462,6 +473,25 @@ function getValuePos(
 
 function tryQ(enemies: AIHeroClient[]): boolean {
   if (!Q.IsReady() || Q.GetManaCost() > Player.Mana) return false;
+  if (
+    Menu.Get('eToQ') &&
+    E.IsReady() &&
+    Q.GetManaCost() + E.GetManaCost() <= Player.Mana
+  ) {
+    let isBallFar = true;
+    for (let i = 0; i < enemies.length; i++) {
+      if (
+        enemies[i].Position.Distance(ballObj.Position) <
+        enemies[i].Position.Distance(Player.Position) + Menu.Get('eToQDistance')
+      ) {
+        isBallFar = false;
+        break;
+      }
+    }
+    if (isBallFar) {
+      return E.Cast(Player);
+    }
+  }
   Q.SetRangeCheckObj(ballObj);
   if (enemies.length > 1) {
     const castPos = Q.GetBestLinearCastPos(enemies);
@@ -632,9 +662,6 @@ function Flee(): void {
 }
 
 function OnTick(): void {
-  const allies = GetValidNearbyHeroes(AllyOrEnemy.Ally);
-  SetballObj(allies);
-
   if (
     ballMoving ||
     Player.IsDead ||
@@ -645,6 +672,7 @@ function OnTick(): void {
   )
     return;
 
+  const allies = GetValidNearbyHeroes(AllyOrEnemy.Ally);
   const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
 
   const orbwalkerMode = Orbwalker.GetMode();
@@ -684,6 +712,7 @@ OnLoad = () => {
   InitMenu();
   InitEvents();
   RetrieveballObj();
+  RetrieveBallBuff();
   return true;
 };
 

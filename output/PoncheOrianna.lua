@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local Core, ObjectManager, Game, Geometry, SpellSlots, Orbwalker, Menu, TargetSelector, ballSelfBuffName, ballAllyBuffName, ballObjName, ballMissileNames, qSpeed, baseDelay, ballObj, ballMoving, ballOnSelf, qInput, Q, wInput, W, eInput, E, rInput, R, QR, IsBall, GetValidNearbyHeroes, SetballObj, OnCreateObject, OnCastSpell, OnProcessSpell, IsToCancel, OnInterruptibleSpell, OnGapclose, OnDraw, IsInRange, getValuePos, tryQ, tryW, tryE, getBestER, getQR, tryR, Auto, Combo, Harass, Flee, OnTick
+local Core, ObjectManager, Game, Geometry, SpellSlots, Orbwalker, Menu, TargetSelector, ballBuffNames, ballObjName, ballMissileNames, qSpeed, baseDelay, ballObj, ballMoving, ballOnSelf, qInput, Q, wInput, W, eInput, E, rInput, R, QR, IsBall, GetValidNearbyHeroes, OnCreateObject, OnBuffGain, OnCastSpell, OnProcessSpell, IsToCancel, OnInterruptibleSpell, OnGapclose, OnDraw, IsInRange, getValuePos, tryQ, tryW, tryE, getBestER, getQR, tryR, Auto, Combo, Harass, Flee, OnTick
 function IsBall(obj)
     return obj.IsAlly and (obj.Name == ballObjName)
 end
@@ -43,36 +43,29 @@ function GetValidNearbyHeroes(team)
     end
     return heroes
 end
-function SetballObj(allies)
-    if Player:GetBuff(ballSelfBuffName) then
-        ballMoving = false
-        ballObj = Player
-        ballOnSelf = true
-        return
-    end
-    do
-        local i = 0
-        while i < #allies do
-            if allies[i + 1]:GetBuff(ballAllyBuffName) then
-                ballMoving = false
-                ballObj = allies[i + 1]
-                ballOnSelf = false
-                return
-            end
-            i = i + 1
-        end
-    end
-end
 function OnCreateObject(obj)
     if (obj.Name == ballMissileNames[1]) or (obj.Name == ballMissileNames[2]) then
         ballOnSelf = false
         ballMoving = true
+        ballObj = obj
         return
     end
     if IsBall(obj) then
         ballMoving = false
-        ballObj = obj
+        ballObj = obj.AsMinion
+    end
+end
+function OnBuffGain(obj, buff)
+    if obj.IsMe and (buff.Name == ballBuffNames[1]) then
+        ballOnSelf = true
+        ballMoving = false
+        ballObj = obj.AsHero
         return
+    end
+    if (obj.IsHero and obj.IsAlly) and (ballBuffNames[3] == buff.Name) then
+        ballMoving = false
+        ballOnSelf = obj.IsMe
+        ballObj = obj.AsHero
     end
 end
 function OnCastSpell(args)
@@ -96,7 +89,7 @@ function OnCastSpell(args)
     end
 end
 function OnProcessSpell(source, spell)
-    if ((((((not ballMoving) and source.IsEnemy) and source.IsHero) and spell.Target) and (not spell.IsBasicAttack)) and spell.Target.IsHero) and spell.Target.IsAlly then
+    if ((((((not ballMoving) and source.IsHero) and source.IsEnemy) and spell.Target) and (not spell.IsBasicAttack)) and spell.Target.IsHero) and spell.Target.IsAlly then
         if spell.Target.IsMe then
             if Menu.Get("eShieldSelf") and E:CanCast(Player) then
                 E:Cast(Player)
@@ -106,7 +99,6 @@ function OnProcessSpell(source, spell)
         local target = spell.Target.AsHero
         if Menu.Get("eShield" .. target.CharName) and E:CanCast(target) then
             E:Cast(target)
-            return
         end
     end
 end
@@ -125,7 +117,7 @@ function IsToCancel(enemyName, slot)
     end
 end
 function OnInterruptibleSpell(source, spell, danger, endTime, canMove)
-    if (((Menu.Get("rCancel") and source.IsEnemy) and source.IsHero) and IsToCancel(source.CharName, spell.Slot)) and (ballObj:Distance(source.Position) <= Menu.Get("rRadius")) then
+    if ((((Menu.Get("rCancel") and (not ballMoving)) and source.IsEnemy) and source.IsHero) and IsToCancel(source.CharName, spell.Slot)) and (ballObj:Distance(source.Position) <= Menu.Get("rRadius")) then
         if not canMove then
             R:Cast()
         elseif source:FastPrediction(rInput.Delay):Distance(ballObj) <= Menu.Get("rRadius") then
@@ -195,6 +187,22 @@ end
 function tryQ(enemies)
     if (not Q:IsReady()) or (Q:GetManaCost() > Player.Mana) then
         return false
+    end
+    if (Menu.Get("eToQ") and E:IsReady()) and ((Q:GetManaCost() + E:GetManaCost()) <= Player.Mana) then
+        local isBallFar = true
+        do
+            local i = 0
+            while i < #enemies do
+                if enemies[i + 1].Position:Distance(ballObj.Position) < (enemies[i + 1].Position:Distance(Player.Position) + Menu.Get("eToQDistance")) then
+                    isBallFar = false
+                    break
+                end
+                i = i + 1
+            end
+        end
+        if isBallFar then
+            return E:Cast(Player)
+        end
     end
     Q:SetRangeCheckObj(ballObj)
     if #enemies > 1 then
@@ -391,11 +399,10 @@ function Flee()
     end
 end
 function OnTick()
-    local allies = GetValidNearbyHeroes("ally")
-    SetballObj(allies)
     if ((((ballMoving or Player.IsDead) or Player.IsRecalling) or (not Player.CanCast)) or Game.IsMinimized()) or Game.IsChatOpen() then
         return
     end
+    local allies = GetValidNearbyHeroes("ally")
     local enemies = GetValidNearbyHeroes("enemy")
     local orbwalkerMode = Orbwalker.GetMode()
     if orbwalkerMode == "Flee" then
@@ -404,53 +411,42 @@ function OnTick()
     if #enemies == 0 then
         return
     end
-    local ____switch130 = orbwalkerMode
-    if ____switch130 == "Combo" then
-        goto ____switch130_case_0
-    elseif ____switch130 == "Harass" then
-        goto ____switch130_case_1
-    elseif ____switch130 == "Lasthit" then
-        goto ____switch130_case_2
-    elseif ____switch130 == "Waveclear" then
-        goto ____switch130_case_3
-    elseif ____switch130 == "nil" then
-        goto ____switch130_case_4
-    end
-    goto ____switch130_end
-    ::____switch130_case_0::
-    do
-        do
-            Combo(allies, enemies)
-            goto ____switch130_end
+    repeat
+        local ____switch137 = orbwalkerMode
+        local ____cond137 = ____switch137 == "Combo"
+        if ____cond137 then
+            do
+                Combo(allies, enemies)
+                break
+            end
         end
-    end
-    ::____switch130_case_1::
-    do
-        do
-            Harass(allies, enemies)
-            goto ____switch130_end
+        ____cond137 = ____cond137 or (____switch137 == "Harass")
+        if ____cond137 then
+            do
+                Harass(allies, enemies)
+                break
+            end
         end
-    end
-    ::____switch130_case_2::
-    do
-        do
-            goto ____switch130_end
+        ____cond137 = ____cond137 or (____switch137 == "Lasthit")
+        if ____cond137 then
+            do
+                break
+            end
         end
-    end
-    ::____switch130_case_3::
-    do
-        do
-            goto ____switch130_end
+        ____cond137 = ____cond137 or (____switch137 == "Waveclear")
+        if ____cond137 then
+            do
+                break
+            end
         end
-    end
-    ::____switch130_case_4::
-    do
-        do
-            Auto(allies, enemies)
-            goto ____switch130_end
+        ____cond137 = ____cond137 or (____switch137 == "nil")
+        if ____cond137 then
+            do
+                Auto(allies, enemies)
+                break
+            end
         end
-    end
-    ::____switch130_end::
+    until true
 end
 if Player.CharName ~= "Orianna" then
     return false
@@ -467,14 +463,13 @@ Orbwalker = Libs.Orbwalker
 Menu = Libs.NewMenu
 local SpellLib = Libs.Spell
 TargetSelector = Libs.TargetSelector()
-ballSelfBuffName = "orianaghostself"
-ballAllyBuffName = "orianaghost"
+ballBuffNames = {"orianaghostself", "orianaghost", "orianaredactshield"}
 ballObjName = "TheDoomBall"
 ballMissileNames = {"OrianaIzuna", "OrianaRedact"}
 local qRange = 825
 qSpeed = 1400
 local ballRadius = 80
-local rRadius = 415
+local rRadius = 400
 baseDelay = 0.25
 local mathHuge = _G.math.huge
 ballObj = Player
@@ -490,7 +485,7 @@ rInput = {Slot = SpellSlots.R, Range = 0, Speed = mathHuge, Delay = 0.5, Radius 
 R = SpellLib.Active(rInput)
 local qrInput = {Slot = SpellSlots.Q, Range = qRange, Speed = qSpeed, Delay = baseDelay, Radius = rRadius, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
 QR = SpellLib.Skillshot(qrInput)
-local events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}, {id = Events.OnInterruptibleSpell, callback = OnInterruptibleSpell}, {id = Events.OnGapclose, callback = OnGapclose}}
+local events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnCreateObject, callback = OnCreateObject}, {id = Events.OnCastSpell, callback = OnCastSpell}, {id = Events.OnProcessSpell, callback = OnProcessSpell}, {id = Events.OnInterruptibleSpell, callback = OnInterruptibleSpell}, {id = Events.OnGapclose, callback = OnGapclose}, {id = Events.OnBuffGain, callback = OnBuffGain}}
 local function InitLog()
     module("PoncheOrianna", package.seeall, log.setup)
     clean.module("PoncheOrianna", clean.seeall, log.setup)
@@ -533,6 +528,8 @@ local function InitMenu()
                 function()
                     Menu.Checkbox("qCombo", "Combo", true)
                     Menu.Checkbox("qHarass", "Harass", true)
+                    Menu.Checkbox("eToQ", "E to Q", true)
+                    Menu.Slider("eToQDistance", "Min dist EQ", 350, 0, 600, 50)
                     Menu.Checkbox("qDraw", "Draw Range", true)
                 end
             )
@@ -573,7 +570,7 @@ local function InitMenu()
                 function()
                     Menu.Checkbox("rCombo", "Combo", true)
                     Menu.Checkbox("rAuto", "Auto", true)
-                    Menu.Slider("rRadius", "Radius", 390, 300, 415, 5)
+                    Menu.Slider("rRadius", "Radius", 390, 300, 400, 5)
                     Menu.Checkbox("eToR", "E to R", true)
                     Menu.Checkbox("qToR", "Q to R", true)
                     Menu.NewTree(
@@ -585,7 +582,7 @@ local function InitMenu()
                             end
                         end
                     )
-                    Menu.Slider("rValue", "Value to cast", 1, 1, enemiesCount * 3, 1)
+                    Menu.Slider("rValue", "Value to cast", 2, 1, enemiesCount * 3, 1)
                     Menu.Checkbox("rCancel", "Use to cancel spell", true)
                     Menu.NewTree(
                         "SpellToCancel",
@@ -635,11 +632,27 @@ local function RetrieveballObj()
         end
     end
 end
+local function RetrieveBallBuff()
+    if Player:GetBuff(ballBuffNames[1]) then
+        ballObj = Player
+        ballOnSelf = true
+        return
+    end
+    local allies = ObjectManager.Get("ally", "heroes")
+    for key, obj in pairs(allies) do
+        local ally = obj.AsHero
+        if (not ally.IsMe) and ally:GetBuff(ballBuffNames[2]) then
+            ballObj = ally
+            ballOnSelf = false
+        end
+    end
+end
 OnLoad = function()
     InitLog()
     InitMenu()
     InitEvents()
     RetrieveballObj()
+    RetrieveBallBuff()
     return true
 end
 return ____exports
