@@ -95,7 +95,7 @@ interface AIBaseClient extends AttackableUnit {
   /**
    * @returns [buffName_lower] = Buff
    */
-  readonly Buffs: BuffInst[];
+  readonly Buffs: LuaTable<string, BuffInst>;
   readonly Direction: Vector;
   readonly TimeUntilRespawn: number;
   FastPrediction(delay_ms: number): Vector;

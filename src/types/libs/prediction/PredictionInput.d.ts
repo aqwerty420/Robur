@@ -1,20 +1,20 @@
 interface PredictionInput {
   From?: Vector;
   Slot: number;
-  Range: number;
+  Range?: number;
   /**
    * Width / 2 for Linear Spells
    */
-  Radius: number;
-  Speed: number;
-  Delay: number;
-  Type: SpellType;
+  Radius?: number;
+  Speed?: number;
+  Delay?: number;
+  Type?: SpellType;
   ConeAngleRad?: number;
   /**
    * Enums_HitChance
    */
-  MinHitChance?: number | null;
-  MinHitChanceEnum?: Enums_HitChance;
+  MinHitChance?: number;
+  MinHitChanceEnum?: keyof Enums_HitChance;
   /**
    * table { Heroes=true, Minions=true, WindWall=true, Wall=true }
    */

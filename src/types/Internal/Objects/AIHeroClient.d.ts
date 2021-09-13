@@ -17,7 +17,7 @@ interface AIHeroClient extends AIBaseClient {
   /**
    * @returns [itemSlot] = item
    */
-  readonly Items: Item[];
+  readonly Items: LuaTable<number, Item>;
   readonly RecallInfo: string;
   HasPerk(id_or_name: number | string): boolean;
   /**
