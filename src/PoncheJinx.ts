@@ -53,7 +53,7 @@ const W = SpellLib.Skillshot(wInput);
 
 const eInput = {
   Slot: SpellSlots.E,
-  Range: 1120,
+  Range: 900,
   Speed: 1850,
   Delay: 0.9, // 0.4 + 0.5
   Radius: 115,
@@ -153,7 +153,6 @@ function InitMenu(): void {
       Menu.Dropdown('wComboHit', 'Hitchance', 4, hitchances);
       Menu.Checkbox('eCombo', 'Use [E]', true);
       Menu.Dropdown('eComboHit', 'Hitchance', 6, hitchances);
-      //Menu.Checkbox('rCombo', 'Use [R]', true);
     });
     Menu.NewTree('harass', 'Harass', function () {
       Menu.Checkbox('qHarass', 'Use [Q]', true);
@@ -168,6 +167,10 @@ function InitMenu(): void {
     Menu.NewTree('lastHit', 'Last Hit', function () {
       Menu.Checkbox('qLastHit', 'Use [Q]', true);
       Menu.Text('Just switch back to Fishbones');
+    });
+    Menu.NewTree('waveClear', 'Wave Clear', function () {
+      Menu.Checkbox('qWaveClear', 'Use [Q]', false);
+      Menu.Slider('qWaveClearMana', 'Min. Mana % ', 40, 0, 100, 5);
     });
     Menu.NewTree('qConfig', '[Q] Config', function () {
       Menu.Checkbox('powPowFullStack', 'Switch full stack', false);
@@ -192,10 +195,14 @@ function InitMenu(): void {
     });
     Menu.NewTree('rConfig', '[R] Config', function () {
       Menu.Checkbox('rAuto', 'Auto [R]', true);
-      Menu.Dropdown('rHit', 'Hitchance', 5, hitchances);
+      Menu.Dropdown('rHit', 'Hitchance', 6, hitchances);
       Menu.Dropdown('rMode', 'Cast mode: ', 1, rModes);
-      Menu.Slider('rMinRange', 'Min. distance', 1400, 0, 3000, 100);
+      Menu.Slider('rMinRange', 'Min. distance', 1000, 0, 3000, 100);
       Menu.Slider('rMaxRange', 'Max. distance', 4000, 3000, 6000, 100);
+    });
+    Menu.NewTree('draw', 'Draw Config', function () {
+      Menu.Checkbox('wDraw', 'Draw [w]', true);
+      Menu.Checkbox('eDraw', 'Draw [E]', true);
     });
   });
 }
@@ -258,7 +265,13 @@ function OnHeroImmobilized(
 }
 
 function OnDraw(): void {
-  Core.Renderer.DrawCircle3D(Player.Position, powPowRange, 10, 10);
+  if (!Player.IsOnScreen) return;
+  if (Menu.Get('wDraw')) {
+    Core.Renderer.DrawCircle3D(Player.Position, wInput.Range, 10);
+  }
+  if (Menu.Get('eDraw')) {
+    Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10);
+  }
 }
 
 function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]): number {
@@ -292,6 +305,12 @@ function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]): boolean {
     );
   }
   return !canAoe && !isFullStack && notInOverswaprange;
+}
+
+function HasMana(minPercent: number): boolean {
+  print((Player.ManaPercent * 100).toString());
+  print(minPercent.toString());
+  return Player.ManaPercent * 100 >= minPercent;
 }
 
 function GetWDelay(): number {
@@ -353,8 +372,8 @@ function tryR(): boolean {
     if (TargetSelector.IsValidTarget(enemy)) {
       const timeToHit =
         rInput.Delay + Player.Distance(enemy.Position) / rInput.Speed;
-      const health = HealthPred.GetHealthPrediction(enemy, timeToHit, false);
-      if (R.GetDamage(enemy) < health[0]) continue;
+      const health = HealthPred.GetHealthPrediction(enemy, timeToHit, true);
+      if (health[0] <= 0 || R.GetDamage(enemy) < health[0]) continue;
       switch (Menu.Get('rMode')) {
         case 0: {
           if (enemy.Distance(Player.Position) > powPowRange) {
@@ -395,8 +414,33 @@ function Combo(enemies: AIHeroClient[]): void {
   }
 }
 
-function HasMana(minPercent: number): boolean {
-  return Player.ManaPercent > minPercent;
+function WaveClear(): void {
+  if (!Menu.Get('qWaveClear') || !Q.IsReady()) return;
+  if (!HasMana(Menu.Get('qWaveClearMana'))) {
+    if (!isFishBones) Q.Cast();
+    return;
+  }
+  const minions = ObjectManager.GetNearby(
+    AllyOrEnemy.Enemy,
+    ObjectType.Minions
+  );
+  let count = 0;
+  let canAoe = false;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const [key, obj] of pairs(minions)) {
+    if (TargetSelector.IsValidTarget(obj)) {
+      count++;
+      if (count > 1) {
+        canAoe = true;
+        break;
+      }
+    }
+  }
+  if (canAoe) {
+    if (isFishBones) Q.Cast();
+  } else {
+    if (!isFishBones) Q.Cast();
+  }
 }
 
 function Harass(enemies: AIHeroClient[]): void {
@@ -489,7 +533,7 @@ function OnTick(): void {
       break;
     }
     case OrbwalkerMode.Waveclear: {
-      //statements;
+      WaveClear();
       break;
     }
     default:

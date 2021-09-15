@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, tryR, Combo, HasMana, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
+local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, HasMana, GetWDelay, tryQ, tryW, tryE, tryR, Combo, WaveClear, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -57,7 +57,15 @@ function OnHeroImmobilized(source, endTime, isStasis)
     end
 end
 function OnDraw()
-    Core.Renderer.DrawCircle3D(Player.Position, powPowRange, 10, 10)
+    if not Player.IsOnScreen then
+        return
+    end
+    if Menu.Get("wDraw") then
+        Core.Renderer.DrawCircle3D(Player.Position, wInput.Range, 10)
+    end
+    if Menu.Get("eDraw") then
+        Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10)
+    end
 end
 function GetAoeCount(target, enemies)
     local count = 0
@@ -83,6 +91,15 @@ function ShouldSwap(target, enemies)
         return ((not isInFishBonesRange) or (Menu.Get("powPowFullStack") and isFullStack)) or (Menu.Get("powPowAoe") and canAoe)
     end
     return ((not canAoe) and (not isFullStack)) and notInOverswaprange
+end
+function HasMana(minPercent)
+    print(
+        tostring(Player.ManaPercent * 100)
+    )
+    print(
+        tostring(minPercent)
+    )
+    return (Player.ManaPercent * 100) >= minPercent
 end
 function GetWDelay()
     return 0.6 - (((Player.AttackSpeedMod - 1) / 25) * 2)
@@ -111,9 +128,9 @@ function tryW(hitchance)
     wInput.Delay = GetWDelay()
     local WCast = SpellLib.Skillshot(wInput)
     repeat
-        local ____switch44 = Menu.Get("wMode")
-        local ____cond44 = ____switch44 == 0
-        if ____cond44 then
+        local ____switch50 = Menu.Get("wMode")
+        local ____cond50 = ____switch50 == 0
+        if ____cond50 then
             do
                 if target.Position:Distance(Player.Position) > powPowRange then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -121,8 +138,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond44 = ____cond44 or (____switch44 == 1)
-        if ____cond44 then
+        ____cond50 = ____cond50 or (____switch50 == 1)
+        if ____cond50 then
             do
                 if target.Position:Distance(Player.Position) > Menu.Get("wMinRange") then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -130,8 +147,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond44 = ____cond44 or (____switch44 == 2)
-        if ____cond44 then
+        ____cond50 = ____cond50 or (____switch50 == 2)
+        if ____cond50 then
             return WCast:CastOnHitChance(target, hitchance)
         end
         do
@@ -167,15 +184,15 @@ function tryR()
             if TargetSelector:IsValidTarget(enemy) then
                 local timeToHit = rInput.Delay + (Player:Distance(enemy.Position) / rInput.Speed)
                 local health = {
-                    HealthPred.GetHealthPrediction(enemy, timeToHit, false)
+                    HealthPred.GetHealthPrediction(enemy, timeToHit, true)
                 }
-                if R:GetDamage(enemy) < health[1] then
-                    goto __continue55
+                if (health[1] <= 0) or (R:GetDamage(enemy) < health[1]) then
+                    goto __continue61
                 end
                 repeat
-                    local ____switch58 = Menu.Get("rMode")
-                    local ____cond58 = ____switch58 == 0
-                    if ____cond58 then
+                    local ____switch64 = Menu.Get("rMode")
+                    local ____cond64 = ____switch64 == 0
+                    if ____cond64 then
                         do
                             if enemy:Distance(Player.Position) > powPowRange then
                                 return R:CastOnHitChance(
@@ -186,8 +203,8 @@ function tryR()
                             break
                         end
                     end
-                    ____cond58 = ____cond58 or (____switch58 == 1)
-                    if ____cond58 then
+                    ____cond64 = ____cond64 or (____switch64 == 1)
+                    if ____cond64 then
                         do
                             local distance = enemy:Distance(Player.Position)
                             if (distance > Menu.Get("rMinRange")) and (distance < Menu.Get("rMaxRange")) then
@@ -199,8 +216,8 @@ function tryR()
                             break
                         end
                     end
-                    ____cond58 = ____cond58 or (____switch58 == 2)
-                    if ____cond58 then
+                    ____cond64 = ____cond64 or (____switch64 == 2)
+                    if ____cond64 then
                         do
                             return R:CastOnHitChance(
                                 enemy,
@@ -214,7 +231,7 @@ function tryR()
                 until true
             end
         end
-        ::__continue55::
+        ::__continue61::
     end
     return false
 end
@@ -240,8 +257,39 @@ function Combo(enemies)
         end
     end
 end
-function HasMana(minPercent)
-    return Player.ManaPercent > minPercent
+function WaveClear()
+    if (not Menu.Get("qWaveClear")) or (not Q:IsReady()) then
+        return
+    end
+    if not HasMana(
+        Menu.Get("qWaveClearMana")
+    ) then
+        if not isFishBones then
+            Q:Cast()
+        end
+        return
+    end
+    local minions = ObjectManager.GetNearby("enemy", "minions")
+    local count = 0
+    local canAoe = false
+    for key, obj in pairs(minions) do
+        if TargetSelector:IsValidTarget(obj) then
+            count = count + 1
+            if count > 1 then
+                canAoe = true
+                break
+            end
+        end
+    end
+    if canAoe then
+        if isFishBones then
+            Q:Cast()
+        end
+    else
+        if not isFishBones then
+            Q:Cast()
+        end
+    end
 end
 function Harass(enemies)
     if Menu.Get("eHarass") and HasMana(
@@ -323,9 +371,9 @@ function OnTick()
     end
     local orbwalkerMode = Orbwalker.GetMode()
     repeat
-        local ____switch95 = orbwalkerMode
-        local ____cond95 = ____switch95 == "Combo"
-        if ____cond95 then
+        local ____switch111 = orbwalkerMode
+        local ____cond111 = ____switch111 == "Combo"
+        if ____cond111 then
             do
                 if #enemies == 0 then
                     return
@@ -334,23 +382,24 @@ function OnTick()
                 break
             end
         end
-        ____cond95 = ____cond95 or (____switch95 == "Harass")
-        if ____cond95 then
+        ____cond111 = ____cond111 or (____switch111 == "Harass")
+        if ____cond111 then
             do
                 Harass(enemies)
                 break
             end
         end
-        ____cond95 = ____cond95 or (____switch95 == "Lasthit")
-        if ____cond95 then
+        ____cond111 = ____cond111 or (____switch111 == "Lasthit")
+        if ____cond111 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond95 = ____cond95 or (____switch95 == "Waveclear")
-        if ____cond95 then
+        ____cond111 = ____cond111 or (____switch111 == "Waveclear")
+        if ____cond111 then
             do
+                WaveClear()
                 break
             end
         end
@@ -382,7 +431,7 @@ local qInput = {Slot = SpellSlots.Q}
 Q = SpellLib.Active(qInput)
 wInput = {Slot = SpellSlots.W, Range = 1500, Speed = 3300, Delay = 0, Radius = 120, Type = "Linear", UseHitbox = true, Collisions = {WindWall = true, Minions = true}}
 W = SpellLib.Skillshot(wInput)
-eInput = {Slot = SpellSlots.E, Range = 1120, Speed = 1850, Delay = 0.9, Radius = 115, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
+eInput = {Slot = SpellSlots.E, Range = 900, Speed = 1850, Delay = 0.9, Radius = 115, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
 E = SpellLib.Skillshot(eInput)
 rInput = {Slot = SpellSlots.R, Range = math.huge, Speed = 1700, Delay = 0.6, Radius = 280, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
 R = SpellLib.Skillshot(rInput)
@@ -476,6 +525,14 @@ local function InitMenu()
                 end
             )
             Menu.NewTree(
+                "waveClear",
+                "Wave Clear",
+                function()
+                    Menu.Checkbox("qWaveClear", "Use [Q]", false)
+                    Menu.Slider("qWaveClearMana", "Min. Mana % ", 40, 0, 100, 5)
+                end
+            )
+            Menu.NewTree(
                 "qConfig",
                 "[Q] Config",
                 function()
@@ -517,10 +574,18 @@ local function InitMenu()
                 "[R] Config",
                 function()
                     Menu.Checkbox("rAuto", "Auto [R]", true)
-                    Menu.Dropdown("rHit", "Hitchance", 5, hitchances)
+                    Menu.Dropdown("rHit", "Hitchance", 6, hitchances)
                     Menu.Dropdown("rMode", "Cast mode: ", 1, rModes)
-                    Menu.Slider("rMinRange", "Min. distance", 1400, 0, 3000, 100)
+                    Menu.Slider("rMinRange", "Min. distance", 1000, 0, 3000, 100)
                     Menu.Slider("rMaxRange", "Max. distance", 4000, 3000, 6000, 100)
+                end
+            )
+            Menu.NewTree(
+                "draw",
+                "Draw Config",
+                function()
+                    Menu.Checkbox("wDraw", "Draw [w]", true)
+                    Menu.Checkbox("eDraw", "Draw [E]", true)
                 end
             )
         end
