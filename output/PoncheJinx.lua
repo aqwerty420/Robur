@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, Combo, Harass, HasStatik, LastHit, UpdateStats, OnTick
+local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, Combo, HasMana, Harass, HasStatik, LastHit, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -88,26 +88,32 @@ function GetWDelay()
     return 0.6 - (((Player.AttackSpeedMod - 1) / 25) * 2)
 end
 function tryQ(enemies)
-    local target = TargetSelector:GetTarget(powPowRange, true)
-    if (not Q:IsReady()) or (not ShouldSwap(
-        ((target and (function() return target end)) or (function() return enemies[1] end))(),
-        enemies
-    )) then
+    if not Q:IsReady() then
         return false
     end
-    return Q:Cast()
+    local target = TargetSelector:GetTarget(powPowRange, true)
+    if ShouldSwap(
+        ((target and (function() return target end)) or (function() return enemies[1] end))(),
+        enemies
+    ) then
+        return Q:Cast()
+    end
+    return false
 end
 function tryW(hitchance)
+    if (not W:IsReady()) or (W:GetManaCost() > Player.Mana) then
+        return false
+    end
     local target = TargetSelector:GetTarget(wInput.Range, true)
-    if ((not target) or (not W:IsReady())) or (W:GetManaCost() > Player.Mana) then
+    if not target then
         return false
     end
     wInput.Delay = GetWDelay()
     local WCast = SpellLib.Skillshot(wInput)
     repeat
-        local ____switch41 = Menu.Get("wMode")
-        local ____cond41 = ____switch41 == 0
-        if ____cond41 then
+        local ____switch43 = Menu.Get("wMode")
+        local ____cond43 = ____switch43 == 0
+        if ____cond43 then
             do
                 if target.Position:Distance(Player.Position) > powPowRange then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -115,8 +121,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond41 = ____cond41 or (____switch41 == 1)
-        if ____cond41 then
+        ____cond43 = ____cond43 or (____switch43 == 1)
+        if ____cond43 then
             do
                 if target.Position:Distance(Player.Position) > Menu.Get("wMinRange") then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -124,8 +130,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond41 = ____cond41 or (____switch41 == 2)
-        if ____cond41 then
+        ____cond43 = ____cond43 or (____switch43 == 2)
+        if ____cond43 then
             return WCast:CastOnHitChance(target, hitchance)
         end
         do
@@ -171,8 +177,13 @@ function Combo(enemies)
         end
     end
 end
+function HasMana(minPercent)
+    return Player.ManaPercent > minPercent
+end
 function Harass(enemies)
-    if Menu.Get("eHarass") then
+    if Menu.Get("eHarass") and HasMana(
+        Menu.Get("eHarassMana")
+    ) then
         if tryE(
             enemies,
             Menu.Get("eHarassHit")
@@ -181,11 +192,23 @@ function Harass(enemies)
         end
     end
     if Menu.Get("qHarass") then
-        if tryQ(enemies) then
-            return
+        if ((not isFishBones) and ((#enemies == 0) or (not HasMana(
+            Menu.Get("qHarassMana")
+        )))) and Q:IsReady() then
+            if Q:Cast() then
+                return
+            end
+        elseif HasMana(
+            Menu.Get("qHarassMana")
+        ) and (#enemies > 0) then
+            if tryQ(enemies) then
+                return
+            end
         end
     end
-    if Menu.Get("wHarass") then
+    if Menu.Get("wHarass") and HasMana(
+        Menu.Get("wHarassMana")
+    ) then
         if tryW(
             Menu.Get("wHarassHit")
         ) then
@@ -229,9 +252,9 @@ function OnTick()
     local enemies = GetValidNearbyHeroes("enemy")
     local orbwalkerMode = Orbwalker.GetMode()
     repeat
-        local ____switch76 = orbwalkerMode
-        local ____cond76 = ____switch76 == "Combo"
-        if ____cond76 then
+        local ____switch82 = orbwalkerMode
+        local ____cond82 = ____switch82 == "Combo"
+        if ____cond82 then
             do
                 if #enemies == 0 then
                     return
@@ -240,25 +263,22 @@ function OnTick()
                 break
             end
         end
-        ____cond76 = ____cond76 or (____switch76 == "Harass")
-        if ____cond76 then
+        ____cond82 = ____cond82 or (____switch82 == "Harass")
+        if ____cond82 then
             do
-                if #enemies == 0 then
-                    return
-                end
                 Harass(enemies)
                 break
             end
         end
-        ____cond76 = ____cond76 or (____switch76 == "Lasthit")
-        if ____cond76 then
+        ____cond82 = ____cond82 or (____switch82 == "Lasthit")
+        if ____cond82 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond76 = ____cond76 or (____switch76 == "Waveclear")
-        if ____cond76 then
+        ____cond82 = ____cond82 or (____switch82 == "Waveclear")
+        if ____cond82 then
             do
                 break
             end
@@ -352,9 +372,9 @@ local function InitMenu()
                 function()
                     Menu.Checkbox("qCombo", "Use [Q]", true)
                     Menu.Checkbox("wCombo", "Use [W]", true)
-                    Menu.Dropdown("wComboHit", "", 4, hitchances)
+                    Menu.Dropdown("wComboHit", "Hitchance", 4, hitchances)
                     Menu.Checkbox("eCombo", "Use [E]", true)
-                    Menu.Dropdown("eComboHit", "", 6, hitchances)
+                    Menu.Dropdown("eComboHit", "Hitchance", 6, hitchances)
                 end
             )
             Menu.NewTree(
@@ -362,10 +382,13 @@ local function InitMenu()
                 "Harass",
                 function()
                     Menu.Checkbox("qHarass", "Use [Q]", true)
+                    Menu.Slider("qHarassMana", "Min. Mana % ", 40, 0, 100, 5)
                     Menu.Checkbox("wHarass", "Use [W]", true)
-                    Menu.Dropdown("wHarassHit", "", 5, hitchances)
+                    Menu.Dropdown("wHarassHit", "Hitchance", 5, hitchances)
+                    Menu.Slider("wHarassMana", "Min. Mana % ", 40, 0, 100, 5)
                     Menu.Checkbox("eHarass", "Use [E]", true)
-                    Menu.Dropdown("eHarassHit", "", 7, hitchances)
+                    Menu.Dropdown("eHarassHit", "Hitchance", 7, hitchances)
+                    Menu.Slider("eHarassMana", "Min. Mana % ", 0, 0, 100, 5)
                 end
             )
             Menu.NewTree(

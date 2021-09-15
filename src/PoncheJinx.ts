@@ -144,17 +144,20 @@ function InitMenu(): void {
     Menu.NewTree('combo', 'Combo', function () {
       Menu.Checkbox('qCombo', 'Use [Q]', true);
       Menu.Checkbox('wCombo', 'Use [W]', true);
-      Menu.Dropdown('wComboHit', '', 4, hitchances);
+      Menu.Dropdown('wComboHit', 'Hitchance', 4, hitchances);
       Menu.Checkbox('eCombo', 'Use [E]', true);
-      Menu.Dropdown('eComboHit', '', 6, hitchances);
+      Menu.Dropdown('eComboHit', 'Hitchance', 6, hitchances);
       //Menu.Checkbox('rCombo', 'Use [R]', true);
     });
     Menu.NewTree('harass', 'Harass', function () {
       Menu.Checkbox('qHarass', 'Use [Q]', true);
+      Menu.Slider('qHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
       Menu.Checkbox('wHarass', 'Use [W]', true);
-      Menu.Dropdown('wHarassHit', '', 5, hitchances);
+      Menu.Dropdown('wHarassHit', 'Hitchance', 5, hitchances);
+      Menu.Slider('wHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
       Menu.Checkbox('eHarass', 'Use [E]', true);
-      Menu.Dropdown('eHarassHit', '', 7, hitchances);
+      Menu.Dropdown('eHarassHit', 'Hitchance', 7, hitchances);
+      Menu.Slider('eHarassMana', 'Min. Mana % ', 0, 0, 100, 5);
     });
     Menu.NewTree('lastHit', 'Last Hit', function () {
       Menu.Checkbox('qLastHit', 'Use [Q]', true);
@@ -227,7 +230,7 @@ function OnHeroImmobilized(
   endTime: number,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isStasis: boolean
-) {
+): void {
   if (
     Menu.Get('eOnCC') &&
     source.IsEnemy &&
@@ -242,30 +245,11 @@ function OnHeroImmobilized(
   }
 }
 
-/*
-function OnBuffGain(source: AIHeroClient, buff: BuffInst) {
-  if (
-    Menu.Get('eOnCC') &&
-    source.IsHero &&
-    source.IsEnemy &&
-    source.IsValid &&
-    (buff.IsCC || buff.IsFear || buff.IsRoot) &&
-    E.IsReady() &&
-    E.GetManaCost() <= Player.Mana &&
-    Menu.Get('eCCDuration') <= buff.EndTime &&
-    E.CanCast(source)
-  ) {
-    E.Cast(source);
-    return;
-  }
-}
-*/
-
 function OnDraw(): void {
   Core.Renderer.DrawCircle3D(Player.Position, powPowRange, 10, 10);
 }
 
-function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]) {
+function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]): number {
   let count = 0;
   const radius = Menu.Get('aoeRadius');
   for (let i = 0; i < enemies.length; i++) {
@@ -279,7 +263,7 @@ function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]) {
   return count;
 }
 
-function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]) {
+function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]): boolean {
   const distanceTarget = Player.Position.Distance(target.Position);
   //const isInPowPowRange = distanceTarget < powPowRange + target.BoundingRadius;
   const isInFishBonesRange =
@@ -303,15 +287,16 @@ function GetWDelay(): number {
 }
 
 function tryQ(enemies: AIHeroClient[]): boolean {
+  if (!Q.IsReady()) return false;
   const target = TargetSelector.GetTarget(powPowRange, true);
-  if (!Q.IsReady() || !ShouldSwap(target ? target : enemies[0], enemies))
-    return false;
-  return Q.Cast();
+  if (ShouldSwap(target ? target : enemies[0], enemies)) return Q.Cast();
+  return false;
 }
 
 function tryW(hitchance: keyof Enums_HitChance): boolean {
+  if (!W.IsReady() || W.GetManaCost() > Player.Mana) return false;
   const target = TargetSelector.GetTarget(wInput.Range, true);
-  if (!target || !W.IsReady() || W.GetManaCost() > Player.Mana) return false;
+  if (!target) return false;
   wInput.Delay = GetWDelay();
   const WCast = SpellLib.Skillshot(wInput);
   switch (Menu.Get('wMode')) {
@@ -364,19 +349,31 @@ function Combo(enemies: AIHeroClient[]): void {
   }
 }
 
+function HasMana(minPercent: number): boolean {
+  return Player.ManaPercent > minPercent;
+}
+
 function Harass(enemies: AIHeroClient[]): void {
-  if (Menu.Get('eHarass')) {
+  if (Menu.Get('eHarass') && HasMana(Menu.Get('eHarassMana'))) {
     if (tryE(enemies, Menu.Get('eHarassHit'))) return;
   }
   if (Menu.Get('qHarass')) {
-    if (tryQ(enemies)) return;
+    if (
+      !isFishBones &&
+      (enemies.length === 0 || !HasMana(Menu.Get('qHarassMana'))) &&
+      Q.IsReady()
+    ) {
+      if (Q.Cast()) return;
+    } else if (HasMana(Menu.Get('qHarassMana')) && enemies.length > 0) {
+      if (tryQ(enemies)) return;
+    }
   }
-  if (Menu.Get('wHarass')) {
+  if (Menu.Get('wHarass') && HasMana(Menu.Get('wHarassMana'))) {
     if (tryW(Menu.Get('wHarassHit'))) return;
   }
 }
 
-function HasStatik() {
+function HasStatik(): boolean {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const [key, item] of pairs(Player.Items)) {
     if (item && item.ItemId === 3094) {
@@ -386,11 +383,11 @@ function HasStatik() {
   return false;
 }
 
-function LastHit() {
+function LastHit(): void {
   if (Menu.Get('qLastHit') && Q.IsReady() && !isFishBones) Q.Cast();
 }
 
-function UpdateStats() {
+function UpdateStats(): void {
   const qLevel = Player.GetSpell(SpellSlots.Q).Level;
   fishbonesRange = 525;
   powPowRange = qLevel * 25 + 600;
@@ -430,7 +427,6 @@ function OnTick(): void {
       break;
     }
     case OrbwalkerMode.Harass: {
-      if (enemies.length === 0) return;
       Harass(enemies);
       break;
     }
