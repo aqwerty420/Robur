@@ -169,7 +169,7 @@ function tryR()
                 local health = {
                     HealthPred.GetHealthPrediction(enemy, timeToHit, false)
                 }
-                if R.GetDamage(enemy) < health[1] then
+                if R:GetDamage(enemy) < health[1] then
                     goto __continue55
                 end
                 repeat

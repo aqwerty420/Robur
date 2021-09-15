@@ -55,12 +55,12 @@ interface Skillshot extends SpellBase {
   /**
    * @param stage "Default", "Empowered", "SecondCast", "ThirdCast", "SecondForm", "ThirdForm"..
    */
-  GetDamage(this: void, target: AIBaseClient, stage?: string): number;
-  GetHealthPred(this: void, target: AIBaseClient): number;
+  GetDamage(target: AIBaseClient, stage?: string): number;
+  GetHealthPred(target: AIBaseClient): number;
   /**
    * @returns Current health + shield + yasuo passive etc
    */
-  GetKillstealHealth(this: void, target: AIHeroClient): number;
+  GetKillstealHealth(target: AIHeroClient): number;
 }
 
 interface Targeted extends SpellBase {
@@ -88,7 +88,6 @@ interface Chargeable extends Skillshot {
    * @param minHitChance Enums_HitChance
    */
   ReleaseOnHitChance(
-    this: void,
     target: AIBaseClient,
     minHitChance: keyof Enums_HitChance
   ): boolean;
