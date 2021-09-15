@@ -16,8 +16,8 @@ interface SpellBase {
   GetMaxAmmo(): number;
   GetTarget(): AIHeroClient | null;
   GetTargets(): AIHeroClient[];
-  GetDamage(this: void, target: AIBaseClient, stage?: string): number;
-  GetHealthPred(target: AIBaseClient);
+  GetDamage(target: AIBaseClient, stage?: string): number;
+  GetHealthPred(target: AIBaseClient): number;
   CanCast(target: AIBaseClient): boolean;
   IsInRange(pos_or_target: AIBaseClient | Vector): boolean;
   IsLeavingRange(target: AIBaseClient): boolean;
