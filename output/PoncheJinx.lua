@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local ObjectManager, Game, SpellSlots, Orbwalker, Menu, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, tryQ, tryW, tryE, Combo, Harass, HasStatik, LastHit, UpdateStats, OnTick
+local ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, Combo, Harass, HasStatik, LastHit, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -83,6 +83,9 @@ function ShouldSwap(target, enemies)
     end
     return ((not canAoe) and (not isFullStack)) and notInOverswaprange
 end
+function GetWDelay()
+    return 0.6 - (((Player.AttackSpeedMod - 1) / 25) * 2)
+end
 function tryQ(enemies)
     local target = TargetSelector:GetTarget(powPowRange, true)
     if (not Q:IsReady()) or (not ShouldSwap(
@@ -98,29 +101,31 @@ function tryW(hitchance)
     if ((not target) or (not W:IsReady())) or (W:GetManaCost() > Player.Mana) then
         return false
     end
+    wInput.Delay = GetWDelay()
+    local WCast = SpellLib.Skillshot(wInput)
     repeat
-        local ____switch40 = Menu.Get("wMode")
-        local ____cond40 = ____switch40 == 1
-        if ____cond40 then
+        local ____switch41 = Menu.Get("wMode")
+        local ____cond41 = ____switch41 == 1
+        if ____cond41 then
             do
                 if target.Position:Distance(Player.Position) > powPowRange then
-                    return W:CastOnHitChance(target, hitchance)
+                    return WCast:CastOnHitChance(target, hitchance)
                 end
                 break
             end
         end
-        ____cond40 = ____cond40 or (____switch40 == 2)
-        if ____cond40 then
+        ____cond41 = ____cond41 or (____switch41 == 2)
+        if ____cond41 then
             do
                 if target.Position:Distance(Player.Position) > Menu.Get("wMinRange") then
-                    return W:Cast(target)
+                    return WCast:Cast(target)
                 end
                 break
             end
         end
-        ____cond40 = ____cond40 or (____switch40 == 3)
-        if ____cond40 then
-            return W:Cast(target)
+        ____cond41 = ____cond41 or (____switch41 == 3)
+        if ____cond41 then
+            return WCast:Cast(target)
         end
         do
             break
@@ -226,30 +231,30 @@ function OnTick()
         return
     end
     repeat
-        local ____switch76 = orbwalkerMode
-        local ____cond76 = ____switch76 == "Combo"
-        if ____cond76 then
+        local ____switch77 = orbwalkerMode
+        local ____cond77 = ____switch77 == "Combo"
+        if ____cond77 then
             do
                 Combo(enemies)
                 break
             end
         end
-        ____cond76 = ____cond76 or (____switch76 == "Harass")
-        if ____cond76 then
+        ____cond77 = ____cond77 or (____switch77 == "Harass")
+        if ____cond77 then
             do
                 Harass(enemies)
                 break
             end
         end
-        ____cond76 = ____cond76 or (____switch76 == "Lasthit")
-        if ____cond76 then
+        ____cond77 = ____cond77 or (____switch77 == "Lasthit")
+        if ____cond77 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond76 = ____cond76 or (____switch76 == "Waveclear")
-        if ____cond76 then
+        ____cond77 = ____cond77 or (____switch77 == "Waveclear")
+        if ____cond77 then
             do
                 break
             end
@@ -271,7 +276,7 @@ local Events = Enums.Events
 local Libs = _G.Libs
 Orbwalker = Libs.Orbwalker
 Menu = Libs.NewMenu
-local SpellLib = Libs.Spell
+SpellLib = Libs.Spell
 TargetSelector = Libs.TargetSelector()
 fishbonesStack = 0
 fishbonesRange = 525

@@ -302,6 +302,10 @@ function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]) {
   return !canAoe && !isFullStack && notInOverswaprange;
 }
 
+function GetWDelay(): number {
+  return 0.6 - ((Player.AttackSpeedMod - 1) / 25) * 2;
+}
+
 function tryQ(enemies: AIHeroClient[]): boolean {
   const target = TargetSelector.GetTarget(powPowRange, true);
   if (!Q.IsReady() || !ShouldSwap(target ? target : enemies[0], enemies))
@@ -312,21 +316,23 @@ function tryQ(enemies: AIHeroClient[]): boolean {
 function tryW(hitchance: keyof Enums_HitChance): boolean {
   const target = TargetSelector.GetTarget(wInput.Range, true);
   if (!target || !W.IsReady() || W.GetManaCost() > Player.Mana) return false;
+  wInput.Delay = GetWDelay();
+  const WCast = SpellLib.Skillshot(wInput);
   switch (Menu.Get('wMode')) {
     case 1: {
       if (target.Position.Distance(Player.Position) > powPowRange) {
-        return W.CastOnHitChance(target, hitchance);
+        return WCast.CastOnHitChance(target, hitchance);
       }
       break;
     }
     case 2: {
       if (target.Position.Distance(Player.Position) > Menu.Get('wMinRange')) {
-        return W.Cast(target);
+        return WCast.Cast(target);
       }
       break;
     }
     case 3:
-      return W.Cast(target);
+      return WCast.Cast(target);
     default:
       break;
   }
