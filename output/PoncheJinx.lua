@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, HasMana, GetWDelay, tryQ, tryW, tryE, tryR, Combo, WaveClear, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
+local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, rSpeed1, rSpeed2, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, HasMana, GetWDelay, tryQ, tryW, tryE, tryR, Combo, WaveClear, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -182,7 +182,10 @@ function tryR()
         do
             local enemy = obj
             if TargetSelector:IsValidTarget(enemy) then
-                local timeToHit = rInput.Delay + (Player:Distance(enemy.Position) / rInput.Speed)
+                local distanceToHit = Player:Distance(enemy.Position)
+                local timeToHit = rInput.Delay + (((distanceToHit <= 1350) and (function() return distanceToHit / rSpeed1 end)) or (function() return (1350 / rSpeed1) + ((distanceToHit - 1350) / rSpeed2) end))()
+                rInput.Speed = distanceToHit / timeToHit
+                local RC = SpellLib.Skillshot(rInput)
                 local health = {
                     HealthPred.GetHealthPrediction(enemy, timeToHit, true)
                 }
@@ -195,7 +198,7 @@ function tryR()
                     if ____cond64 then
                         do
                             if enemy:Distance(Player.Position) > powPowRange then
-                                return R:CastOnHitChance(
+                                return RC:CastOnHitChance(
                                     enemy,
                                     Menu.Get("rHit")
                                 )
@@ -208,7 +211,7 @@ function tryR()
                         do
                             local distance = enemy:Distance(Player.Position)
                             if (distance > Menu.Get("rMinRange")) and (distance < Menu.Get("rMaxRange")) then
-                                return R:CastOnHitChance(
+                                return RC:CastOnHitChance(
                                     enemy,
                                     Menu.Get("rHit")
                                 )
@@ -219,7 +222,7 @@ function tryR()
                     ____cond64 = ____cond64 or (____switch64 == 2)
                     if ____cond64 then
                         do
-                            return R:CastOnHitChance(
+                            return RC:CastOnHitChance(
                                 enemy,
                                 Menu.Get("rHit")
                             )
@@ -427,13 +430,15 @@ fishbonesStack = 0
 fishbonesRange = 525
 isFishBones = true
 powPowRange = 600
+rSpeed1 = 1700
+rSpeed2 = 2200
 local qInput = {Slot = SpellSlots.Q}
 Q = SpellLib.Active(qInput)
 wInput = {Slot = SpellSlots.W, Range = 1500, Speed = 3300, Delay = 0, Radius = 120, Type = "Linear", UseHitbox = true, Collisions = {WindWall = true, Minions = true}}
 W = SpellLib.Skillshot(wInput)
 eInput = {Slot = SpellSlots.E, Range = 900, Speed = 1850, Delay = 0.9, Radius = 115, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
 E = SpellLib.Skillshot(eInput)
-rInput = {Slot = SpellSlots.R, Range = math.huge, Speed = 1700, Delay = 0.6, Radius = 280, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
+rInput = {Slot = SpellSlots.R, Range = math.huge, Speed = rSpeed1, Delay = 0.6, Radius = 280, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
 R = SpellLib.Skillshot(rInput)
 local events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnGapclose, callback = OnGapclose}, {id = Events.OnHeroImmobilized, callback = OnHeroImmobilized}}
 local rModes = {}

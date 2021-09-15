@@ -32,6 +32,9 @@ let fishbonesRange = 525;
 let isFishBones = true;
 let powPowRange = 600;
 
+const rSpeed1 = 1700;
+const rSpeed2 = 2200;
+
 const qInput: PredictionInput = {
   Slot: SpellSlots.Q,
 };
@@ -67,7 +70,7 @@ const E = SpellLib.Skillshot(eInput);
 const rInput = {
   Slot: SpellSlots.R,
   Range: math.huge,
-  Speed: 1700, // 2200
+  Speed: rSpeed1,
   Delay: 0.6,
   Radius: 280,
   Type: SpellType.Circular,
@@ -370,14 +373,20 @@ function tryR(): boolean {
   )) {
     const enemy = obj as AIHeroClient;
     if (TargetSelector.IsValidTarget(enemy)) {
+      const distanceToHit = Player.Distance(enemy.Position);
       const timeToHit =
-        rInput.Delay + Player.Distance(enemy.Position) / rInput.Speed;
+        rInput.Delay +
+        (distanceToHit <= 1350
+          ? distanceToHit / rSpeed1
+          : 1350 / rSpeed1 + (distanceToHit - 1350) / rSpeed2);
+      rInput.Speed = distanceToHit / timeToHit;
+      const RC = SpellLib.Skillshot(rInput);
       const health = HealthPred.GetHealthPrediction(enemy, timeToHit, true);
       if (health[0] <= 0 || R.GetDamage(enemy) < health[0]) continue;
       switch (Menu.Get('rMode')) {
         case 0: {
           if (enemy.Distance(Player.Position) > powPowRange) {
-            return R.CastOnHitChance(enemy, Menu.Get('rHit'));
+            return RC.CastOnHitChance(enemy, Menu.Get('rHit'));
           }
           break;
         }
@@ -387,12 +396,12 @@ function tryR(): boolean {
             distance > Menu.Get('rMinRange') &&
             distance < Menu.Get('rMaxRange')
           ) {
-            return R.CastOnHitChance(enemy, Menu.Get('rHit'));
+            return RC.CastOnHitChance(enemy, Menu.Get('rHit'));
           }
           break;
         }
         case 2: {
-          return R.CastOnHitChance(enemy, Menu.Get('rHit'));
+          return RC.CastOnHitChance(enemy, Menu.Get('rHit'));
         }
         default:
           break;
