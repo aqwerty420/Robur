@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, Combo, HasMana, Harass, HasStatik, LastHit, UpdateStats, OnTick
+local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, tryR, Combo, HasMana, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -111,9 +111,9 @@ function tryW(hitchance)
     wInput.Delay = GetWDelay()
     local WCast = SpellLib.Skillshot(wInput)
     repeat
-        local ____switch43 = Menu.Get("wMode")
-        local ____cond43 = ____switch43 == 0
-        if ____cond43 then
+        local ____switch44 = Menu.Get("wMode")
+        local ____cond44 = ____switch44 == 0
+        if ____cond44 then
             do
                 if target.Position:Distance(Player.Position) > powPowRange then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -121,8 +121,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond43 = ____cond43 or (____switch43 == 1)
-        if ____cond43 then
+        ____cond44 = ____cond44 or (____switch44 == 1)
+        if ____cond44 then
             do
                 if target.Position:Distance(Player.Position) > Menu.Get("wMinRange") then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -130,8 +130,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond43 = ____cond43 or (____switch43 == 2)
-        if ____cond43 then
+        ____cond44 = ____cond44 or (____switch44 == 2)
+        if ____cond44 then
             return WCast:CastOnHitChance(target, hitchance)
         end
         do
@@ -152,6 +152,69 @@ function tryE(enemies, hitchance)
             end
             i = i + 1
         end
+    end
+    return false
+end
+function tryR()
+    if (not R:IsReady()) or (R:GetManaCost() > Player.Mana) then
+        return false
+    end
+    for key, obj in pairs(
+        ObjectManager.Get("enemy", "heroes")
+    ) do
+        do
+            local enemy = obj
+            if TargetSelector:IsValidTarget(enemy) then
+                local timeToHit = rInput.Delay + (Player:Distance(enemy.Position) / rInput.Speed)
+                local health = {
+                    HealthPred.GetHealthPrediction(enemy, timeToHit, false)
+                }
+                if R.GetDamage(enemy) < health[1] then
+                    goto __continue55
+                end
+                repeat
+                    local ____switch58 = Menu.Get("rMode")
+                    local ____cond58 = ____switch58 == 0
+                    if ____cond58 then
+                        do
+                            if enemy:Distance(Player.Position) > powPowRange then
+                                return R:CastOnHitChance(
+                                    enemy,
+                                    Menu.Get("rHit")
+                                )
+                            end
+                            break
+                        end
+                    end
+                    ____cond58 = ____cond58 or (____switch58 == 1)
+                    if ____cond58 then
+                        do
+                            local distance = enemy:Distance(Player.Position)
+                            if (distance > Menu.Get("rMinRange")) and (distance < Menu.Get("rMaxRange")) then
+                                return R:CastOnHitChance(
+                                    enemy,
+                                    Menu.Get("rHit")
+                                )
+                            end
+                            break
+                        end
+                    end
+                    ____cond58 = ____cond58 or (____switch58 == 2)
+                    if ____cond58 then
+                        do
+                            return R:CastOnHitChance(
+                                enemy,
+                                Menu.Get("rHit")
+                            )
+                        end
+                    end
+                    do
+                        break
+                    end
+                until true
+            end
+        end
+        ::__continue55::
     end
     return false
 end
@@ -229,6 +292,11 @@ function LastHit()
         Q:Cast()
     end
 end
+function Auto()
+    if Menu.Get("rAuto") then
+        return tryR()
+    end
+end
 function UpdateStats()
     local qLevel = Player:GetSpell(SpellSlots.Q).Level
     fishbonesRange = 525
@@ -250,11 +318,14 @@ function OnTick()
     end
     UpdateStats()
     local enemies = GetValidNearbyHeroes("enemy")
+    if Auto() then
+        return
+    end
     local orbwalkerMode = Orbwalker.GetMode()
     repeat
-        local ____switch82 = orbwalkerMode
-        local ____cond82 = ____switch82 == "Combo"
-        if ____cond82 then
+        local ____switch95 = orbwalkerMode
+        local ____cond95 = ____switch95 == "Combo"
+        if ____cond95 then
             do
                 if #enemies == 0 then
                     return
@@ -263,22 +334,22 @@ function OnTick()
                 break
             end
         end
-        ____cond82 = ____cond82 or (____switch82 == "Harass")
-        if ____cond82 then
+        ____cond95 = ____cond95 or (____switch95 == "Harass")
+        if ____cond95 then
             do
                 Harass(enemies)
                 break
             end
         end
-        ____cond82 = ____cond82 or (____switch82 == "Lasthit")
-        if ____cond82 then
+        ____cond95 = ____cond95 or (____switch95 == "Lasthit")
+        if ____cond95 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond82 = ____cond82 or (____switch82 == "Waveclear")
-        if ____cond82 then
+        ____cond95 = ____cond95 or (____switch95 == "Waveclear")
+        if ____cond95 then
             do
                 break
             end
@@ -301,6 +372,7 @@ local Libs = _G.Libs
 Orbwalker = Libs.Orbwalker
 Menu = Libs.NewMenu
 SpellLib = Libs.Spell
+HealthPred = Libs.HealthPred
 TargetSelector = Libs.TargetSelector()
 fishbonesStack = 0
 fishbonesRange = 525
@@ -312,9 +384,13 @@ wInput = {Slot = SpellSlots.W, Range = 1500, Speed = 3300, Delay = 0, Radius = 1
 W = SpellLib.Skillshot(wInput)
 eInput = {Slot = SpellSlots.E, Range = 1120, Speed = 1850, Delay = 0.9, Radius = 115, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
 E = SpellLib.Skillshot(eInput)
-local rInput = {Slot = SpellSlots.R, Range = math.huge, Speed = 1700, Delay = 0.6, Radius = 280, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
-local R = SpellLib.Skillshot(rInput)
+rInput = {Slot = SpellSlots.R, Range = math.huge, Speed = 1700, Delay = 0.6, Radius = 280, Type = "Circular", UseHitbox = false, Collisions = {WindWall = true}}
+R = SpellLib.Skillshot(rInput)
 local events = {{id = Events.OnTick, callback = OnTick}, {id = Events.OnDraw, callback = OnDraw}, {id = Events.OnGapclose, callback = OnGapclose}, {id = Events.OnHeroImmobilized, callback = OnHeroImmobilized}}
+local rModes = {}
+rModes[1] = "Out of AA range"
+rModes[2] = "Min/Max distance"
+rModes[3] = "Always"
 local wModes = {}
 wModes[1] = "Out of AA range"
 wModes[2] = "Min. distance"
@@ -436,6 +512,17 @@ local function InitMenu()
                     Menu.Slider("eCCDuration", "Min. CC duration", 0.4, 0, 2, 0.1)
                 end
             )
+            Menu.NewTree(
+                "rConfig",
+                "[R] Config",
+                function()
+                    Menu.Checkbox("rAuto", "Auto [R]", true)
+                    Menu.Dropdown("rHit", "Hitchance", 5, hitchances)
+                    Menu.Dropdown("rMode", "Cast mode: ", 1, rModes)
+                    Menu.Slider("rMinRange", "Min. distance", 1400, 0, 3000, 100)
+                    Menu.Slider("rMaxRange", "Max. distance", 4000, 3000, 6000, 100)
+                end
+            )
         end
     )
 end
@@ -448,12 +535,6 @@ local function InitEvents()
             i = i + 1
         end
     end
-end
-local function tryR(enemies)
-    if (not R:IsReady()) or (R:GetManaCost() > Player.Mana) then
-        return false
-    end
-    return false
 end
 OnLoad = function()
     InitLog()

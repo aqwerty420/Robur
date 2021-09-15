@@ -24,6 +24,7 @@ const Libs = _G.Libs;
 const Orbwalker = Libs.Orbwalker;
 const Menu = Libs.NewMenu;
 const SpellLib = Libs.Spell;
+const HealthPred = Libs.HealthPred;
 const TargetSelector = Libs.TargetSelector();
 
 let fishbonesStack = 0;
@@ -94,6 +95,11 @@ const events: EventToRegister[] = [
     callback: OnHeroImmobilized,
   },
 ];
+
+const rModes = new LuaTable();
+rModes.set(1, 'Out of AA range');
+rModes.set(2, 'Min/Max distance');
+rModes.set(3, 'Always');
 
 const wModes = new LuaTable();
 wModes.set(1, 'Out of AA range');
@@ -184,7 +190,13 @@ function InitMenu(): void {
       Menu.Checkbox('eOnCC', 'Auto on CC', true);
       Menu.Slider('eCCDuration', 'Min. CC duration', 0.4, 0, 2, 0.1);
     });
-    //Menu.NewTree('rConfig', '[R] Config', function () { });
+    Menu.NewTree('rConfig', '[R] Config', function () {
+      Menu.Checkbox('rAuto', 'Auto [R]', true);
+      Menu.Dropdown('rHit', 'Hitchance', 5, hitchances);
+      Menu.Dropdown('rMode', 'Cast mode: ', 1, rModes);
+      Menu.Slider('rMinRange', 'Min. distance', 1400, 0, 3000, 100);
+      Menu.Slider('rMaxRange', 'Max. distance', 4000, 3000, 6000, 100);
+    });
   });
 }
 
@@ -331,9 +343,43 @@ function tryE(
   return false;
 }
 
-function tryR(enemies: AIHeroClient[]): boolean {
+function tryR(): boolean {
   if (!R.IsReady() || R.GetManaCost() > Player.Mana) return false;
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const [key, obj] of pairs(
+    ObjectManager.Get(AllyOrEnemy.Enemy, ObjectType.Heroes)
+  )) {
+    const enemy = obj as AIHeroClient;
+    if (TargetSelector.IsValidTarget(enemy)) {
+      const timeToHit =
+        rInput.Delay + Player.Distance(enemy.Position) / rInput.Speed;
+      const health = HealthPred.GetHealthPrediction(enemy, timeToHit, false);
+      if (R.GetDamage(enemy) < health[0]) continue;
+      switch (Menu.Get('rMode')) {
+        case 0: {
+          if (enemy.Distance(Player.Position) > powPowRange) {
+            return R.CastOnHitChance(enemy, Menu.Get('rHit'));
+          }
+          break;
+        }
+        case 1: {
+          const distance = enemy.Distance(Player.Position);
+          if (
+            distance > Menu.Get('rMinRange') &&
+            distance < Menu.Get('rMaxRange')
+          ) {
+            return R.CastOnHitChance(enemy, Menu.Get('rHit'));
+          }
+          break;
+        }
+        case 2: {
+          return R.CastOnHitChance(enemy, Menu.Get('rHit'));
+        }
+        default:
+          break;
+      }
+    }
+  }
   return false;
 }
 
@@ -387,6 +433,12 @@ function LastHit(): void {
   if (Menu.Get('qLastHit') && Q.IsReady() && !isFishBones) Q.Cast();
 }
 
+function Auto(): boolean {
+  if (Menu.Get('rAuto')) {
+    return tryR();
+  }
+}
+
 function UpdateStats(): void {
   const qLevel = Player.GetSpell(SpellSlots.Q).Level;
   fishbonesRange = 525;
@@ -417,6 +469,8 @@ function OnTick(): void {
   UpdateStats();
 
   const enemies = GetValidNearbyHeroes(AllyOrEnemy.Enemy);
+
+  if (Auto()) return;
 
   const orbwalkerMode = Orbwalker.GetMode();
 
