@@ -93,12 +93,6 @@ const events: EventToRegister[] = [
     id: Events.OnHeroImmobilized,
     callback: OnHeroImmobilized,
   },
-  /*
-  {
-    id: Events.OnBuffGain,
-    callback: OnBuffGain,
-  },
-  */
 ];
 
 const wModes = new LuaTable();
@@ -150,17 +144,17 @@ function InitMenu(): void {
     Menu.NewTree('combo', 'Combo', function () {
       Menu.Checkbox('qCombo', 'Use [Q]', true);
       Menu.Checkbox('wCombo', 'Use [W]', true);
-      Menu.Dropdown('wComboHit', '[W] Hitchance: ', 5, hitchances);
+      Menu.Dropdown('wComboHit', '', 4, hitchances);
       Menu.Checkbox('eCombo', 'Use [E]', true);
-      Menu.Dropdown('eComboHit', '[E] Hitchance: ', 6, hitchances);
+      Menu.Dropdown('eComboHit', '', 6, hitchances);
       //Menu.Checkbox('rCombo', 'Use [R]', true);
     });
     Menu.NewTree('harass', 'Harass', function () {
       Menu.Checkbox('qHarass', 'Use [Q]', true);
       Menu.Checkbox('wHarass', 'Use [W]', true);
-      Menu.Dropdown('wHarassHit', '[W] Hitchance: ', 6, hitchances);
+      Menu.Dropdown('wHarassHit', '', 5, hitchances);
       Menu.Checkbox('eHarass', 'Use [E]', true);
-      Menu.Dropdown('eHarassHit', '[W] Hitchance: ', 7, hitchances);
+      Menu.Dropdown('eHarassHit', '', 7, hitchances);
     });
     Menu.NewTree('lastHit', 'Last Hit', function () {
       Menu.Checkbox('qLastHit', 'Use [Q]', true);
@@ -169,9 +163,9 @@ function InitMenu(): void {
     Menu.NewTree('qConfig', '[Q] Config', function () {
       Menu.Checkbox('powPowFullStack', 'Switch full stack', false);
       Menu.Checkbox('powPowAoe', 'Switch for AOE', true);
-      Menu.Slider('aoeCount', 'Min. AOE hitcount ', 2, 1, 3, 1);
-      Menu.Slider('aoeRadius', 'AOE hit radius ', 300, 100, 300, 50);
-      Menu.Slider('overSwap', 'Anti overswap', 60, 0, 150, 10);
+      Menu.Slider('aoeCount', 'Min. Hitcount ', 2, 1, 3, 1);
+      Menu.Slider('aoeRadius', 'AOE Radius ', 300, 100, 300, 50);
+      Menu.Slider('overSwap', 'Anti Overswap', 60, 0, 150, 10);
     });
     Menu.NewTree('wConfig', '[W] Config', function () {
       Menu.Dropdown('wMode', 'Cast mode: ', 1, wModes);
@@ -267,7 +261,9 @@ function OnBuffGain(source: AIHeroClient, buff: BuffInst) {
 }
 */
 
-function OnDraw(): void { }
+function OnDraw(): void {
+  Core.Renderer.DrawCircle3D(Player.Position, powPowRange, 10, 10);
+}
 
 function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]) {
   let count = 0;
@@ -319,20 +315,20 @@ function tryW(hitchance: keyof Enums_HitChance): boolean {
   wInput.Delay = GetWDelay();
   const WCast = SpellLib.Skillshot(wInput);
   switch (Menu.Get('wMode')) {
-    case 1: {
+    case 0: {
       if (target.Position.Distance(Player.Position) > powPowRange) {
         return WCast.CastOnHitChance(target, hitchance);
       }
       break;
     }
-    case 2: {
+    case 1: {
       if (target.Position.Distance(Player.Position) > Menu.Get('wMinRange')) {
-        return WCast.Cast(target);
+        return WCast.CastOnHitChance(target, hitchance);
       }
       break;
     }
-    case 3:
-      return WCast.Cast(target);
+    case 2:
+      return WCast.CastOnHitChance(target, hitchance);
     default:
       break;
   }
@@ -363,7 +359,7 @@ function Combo(enemies: AIHeroClient[]): void {
   if (Menu.Get('qCombo')) {
     if (tryQ(enemies)) return;
   }
-  if (Menu.Get('wCombo') && !Menu.Get('wAuto')) {
+  if (Menu.Get('wCombo')) {
     if (tryW(Menu.Get('wComboHit'))) return;
   }
 }
@@ -427,14 +423,14 @@ function OnTick(): void {
 
   const orbwalkerMode = Orbwalker.GetMode();
 
-  if (enemies.length === 0) return;
-
   switch (orbwalkerMode) {
     case OrbwalkerMode.Combo: {
+      if (enemies.length === 0) return;
       Combo(enemies);
       break;
     }
     case OrbwalkerMode.Harass: {
+      if (enemies.length === 0) return;
       Harass(enemies);
       break;
     }

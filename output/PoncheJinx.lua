@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, Combo, Harass, HasStatik, LastHit, UpdateStats, OnTick
+local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, Q, wInput, W, eInput, E, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, GetWDelay, tryQ, tryW, tryE, Combo, Harass, HasStatik, LastHit, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -57,6 +57,7 @@ function OnHeroImmobilized(source, endTime, isStasis)
     end
 end
 function OnDraw()
+    Core.Renderer.DrawCircle3D(Player.Position, powPowRange, 10, 10)
 end
 function GetAoeCount(target, enemies)
     local count = 0
@@ -105,7 +106,7 @@ function tryW(hitchance)
     local WCast = SpellLib.Skillshot(wInput)
     repeat
         local ____switch41 = Menu.Get("wMode")
-        local ____cond41 = ____switch41 == 1
+        local ____cond41 = ____switch41 == 0
         if ____cond41 then
             do
                 if target.Position:Distance(Player.Position) > powPowRange then
@@ -114,18 +115,18 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond41 = ____cond41 or (____switch41 == 2)
+        ____cond41 = ____cond41 or (____switch41 == 1)
         if ____cond41 then
             do
                 if target.Position:Distance(Player.Position) > Menu.Get("wMinRange") then
-                    return WCast:Cast(target)
+                    return WCast:CastOnHitChance(target, hitchance)
                 end
                 break
             end
         end
-        ____cond41 = ____cond41 or (____switch41 == 3)
+        ____cond41 = ____cond41 or (____switch41 == 2)
         if ____cond41 then
-            return WCast:Cast(target)
+            return WCast:CastOnHitChance(target, hitchance)
         end
         do
             break
@@ -162,7 +163,7 @@ function Combo(enemies)
             return
         end
     end
-    if Menu.Get("wCombo") and (not Menu.Get("wAuto")) then
+    if Menu.Get("wCombo") then
         if tryW(
             Menu.Get("wComboHit")
         ) then
@@ -227,34 +228,37 @@ function OnTick()
     UpdateStats()
     local enemies = GetValidNearbyHeroes("enemy")
     local orbwalkerMode = Orbwalker.GetMode()
-    if #enemies == 0 then
-        return
-    end
     repeat
-        local ____switch77 = orbwalkerMode
-        local ____cond77 = ____switch77 == "Combo"
-        if ____cond77 then
+        local ____switch76 = orbwalkerMode
+        local ____cond76 = ____switch76 == "Combo"
+        if ____cond76 then
             do
+                if #enemies == 0 then
+                    return
+                end
                 Combo(enemies)
                 break
             end
         end
-        ____cond77 = ____cond77 or (____switch77 == "Harass")
-        if ____cond77 then
+        ____cond76 = ____cond76 or (____switch76 == "Harass")
+        if ____cond76 then
             do
+                if #enemies == 0 then
+                    return
+                end
                 Harass(enemies)
                 break
             end
         end
-        ____cond77 = ____cond77 or (____switch77 == "Lasthit")
-        if ____cond77 then
+        ____cond76 = ____cond76 or (____switch76 == "Lasthit")
+        if ____cond76 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond77 = ____cond77 or (____switch77 == "Waveclear")
-        if ____cond77 then
+        ____cond76 = ____cond76 or (____switch76 == "Waveclear")
+        if ____cond76 then
             do
                 break
             end
@@ -267,7 +271,7 @@ end
 if Player.CharName ~= "Jinx" then
     return false
 end
-local Core = _G.CoreEx
+Core = _G.CoreEx
 ObjectManager = Core.ObjectManager
 Game = Core.Game
 local Enums = Core.Enums
@@ -348,9 +352,9 @@ local function InitMenu()
                 function()
                     Menu.Checkbox("qCombo", "Use [Q]", true)
                     Menu.Checkbox("wCombo", "Use [W]", true)
-                    Menu.Dropdown("wComboHit", "[W] Hitchance: ", 5, hitchances)
+                    Menu.Dropdown("wComboHit", "", 4, hitchances)
                     Menu.Checkbox("eCombo", "Use [E]", true)
-                    Menu.Dropdown("eComboHit", "[E] Hitchance: ", 6, hitchances)
+                    Menu.Dropdown("eComboHit", "", 6, hitchances)
                 end
             )
             Menu.NewTree(
@@ -359,9 +363,9 @@ local function InitMenu()
                 function()
                     Menu.Checkbox("qHarass", "Use [Q]", true)
                     Menu.Checkbox("wHarass", "Use [W]", true)
-                    Menu.Dropdown("wHarassHit", "[W] Hitchance: ", 6, hitchances)
+                    Menu.Dropdown("wHarassHit", "", 5, hitchances)
                     Menu.Checkbox("eHarass", "Use [E]", true)
-                    Menu.Dropdown("eHarassHit", "[W] Hitchance: ", 7, hitchances)
+                    Menu.Dropdown("eHarassHit", "", 7, hitchances)
                 end
             )
             Menu.NewTree(
@@ -378,9 +382,9 @@ local function InitMenu()
                 function()
                     Menu.Checkbox("powPowFullStack", "Switch full stack", false)
                     Menu.Checkbox("powPowAoe", "Switch for AOE", true)
-                    Menu.Slider("aoeCount", "Min. AOE hitcount ", 2, 1, 3, 1)
-                    Menu.Slider("aoeRadius", "AOE hit radius ", 300, 100, 300, 50)
-                    Menu.Slider("overSwap", "Anti overswap", 60, 0, 150, 10)
+                    Menu.Slider("aoeCount", "Min. Hitcount ", 2, 1, 3, 1)
+                    Menu.Slider("aoeRadius", "AOE Radius ", 300, 100, 300, 50)
+                    Menu.Slider("overSwap", "Anti Overswap", 60, 0, 150, 10)
                 end
             )
             Menu.NewTree(
