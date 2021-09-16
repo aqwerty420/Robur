@@ -138,7 +138,7 @@ function InitMenu(): void {
   }
   if (enemiesCount === 0) enemiesCount = 1;
   Menu.RegisterMenu('PoncheJinx', 'PoncheJinx', function () {
-    Menu.Text('v1.1.0', true);
+    Menu.Text('v1.2.0', true);
     Menu.NewTree('combo', 'Combo', function () {
       Menu.Checkbox('qCombo', 'Use [Q]', true);
       Menu.Checkbox('wCombo', 'Use [W]', true);
@@ -165,8 +165,7 @@ function InitMenu(): void {
       Menu.Slider('qWaveClearMana', 'Min. Mana % ', 40, 0, 100, 5);
     });
     Menu.NewTree('qConfig', '[Q] Config', function () {
-      Menu.Checkbox('powPowFullStack', 'Switch full stack', false);
-      Menu.Checkbox('powPowAoe', 'Switch for AOE', true);
+      Menu.Checkbox('qAOEFullstack', 'AOE fullstack', true);
       Menu.Slider('aoeCount', 'Min. Hitcount ', 2, 1, 3, 1);
       Menu.Slider('aoeRadius', 'AOE Radius ', 300, 100, 300, 50);
       Menu.Slider('overSwap', 'Anti Overswap', 60, 0, 150, 10);
@@ -294,21 +293,21 @@ function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]): number {
 
 function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]): boolean {
   const distanceTarget = target.EdgeDistance(Player.Position);
-  //const isInPowPowRange = distanceTarget < powPowRange + target.BoundingRadius;
-  const isInFishBonesRange =
-    distanceTarget < fishbonesRange + target.BoundingRadius;
-  const notInOverswaprange =
-    distanceTarget < 525 + target.BoundingRadius - Menu.Get('overSwap');
+  const isInFishBonesRange = distanceTarget < fishbonesRange;
+  const notInOverswaprange = distanceTarget < 525 - Menu.Get('overSwap');
   const isFullStack = fishbonesStack === 3;
   const canAoe = GetAoeCount(target, enemies) > Menu.Get('aoeCount') - 1;
   if (isFishBones) {
     return (
-      !isInFishBonesRange /*&& isInPowPowRange*/ ||
-      (Menu.Get('powPowFullStack') && isFullStack) ||
-      (Menu.Get('powPowAoe') && canAoe)
+      !isInFishBonesRange ||
+      (Menu.Get('qAOEFullstack') && canAoe && isFullStack)
     );
   }
-  return !canAoe && !isFullStack && notInOverswaprange;
+  return (
+    isInFishBonesRange &&
+    notInOverswaprange &&
+    (!Menu.Get('qAOEFullstack') || !isFullStack || !canAoe)
+  );
 }
 
 function HasMana(minPercent: number): boolean {

@@ -93,14 +93,14 @@ function GetAoeCount(target, enemies)
 end
 function ShouldSwap(target, enemies)
     local distanceTarget = target:EdgeDistance(Player.Position)
-    local isInFishBonesRange = distanceTarget < (fishbonesRange + target.BoundingRadius)
-    local notInOverswaprange = distanceTarget < ((525 + target.BoundingRadius) - Menu.Get("overSwap"))
+    local isInFishBonesRange = distanceTarget < fishbonesRange
+    local notInOverswaprange = distanceTarget < (525 - Menu.Get("overSwap"))
     local isFullStack = fishbonesStack == 3
     local canAoe = GetAoeCount(target, enemies) > (Menu.Get("aoeCount") - 1)
     if isFishBones then
-        return ((not isInFishBonesRange) or (Menu.Get("powPowFullStack") and isFullStack)) or (Menu.Get("powPowAoe") and canAoe)
+        return (not isInFishBonesRange) or ((Menu.Get("qAOEFullstack") and canAoe) and isFullStack)
     end
-    return ((not canAoe) and (not isFullStack)) and notInOverswaprange
+    return (isInFishBonesRange and notInOverswaprange) and (((not Menu.Get("qAOEFullstack")) or (not isFullStack)) or (not canAoe))
 end
 function HasMana(minPercent)
     print(
@@ -511,7 +511,7 @@ local function InitMenu()
         "PoncheJinx",
         "PoncheJinx",
         function()
-            Menu.Text("v1.1.0", true)
+            Menu.Text("v1.2.0", true)
             Menu.NewTree(
                 "combo",
                 "Combo",
@@ -557,8 +557,7 @@ local function InitMenu()
                 "qConfig",
                 "[Q] Config",
                 function()
-                    Menu.Checkbox("powPowFullStack", "Switch full stack", false)
-                    Menu.Checkbox("powPowAoe", "Switch for AOE", true)
+                    Menu.Checkbox("qAOEFullstack", "AOE fullstack", true)
                     Menu.Slider("aoeCount", "Min. Hitcount ", 2, 1, 3, 1)
                     Menu.Slider("aoeRadius", "AOE Radius ", 300, 100, 300, 50)
                     Menu.Slider("overSwap", "Anti Overswap", 60, 0, 150, 10)
