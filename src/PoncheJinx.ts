@@ -138,7 +138,7 @@ function InitMenu(): void {
   }
   if (enemiesCount === 0) enemiesCount = 1;
   Menu.RegisterMenu('PoncheJinx', 'PoncheJinx', function () {
-    Menu.Text('v1.0', true);
+    Menu.Text('v1.1.0', true);
     Menu.NewTree('combo', 'Combo', function () {
       Menu.Checkbox('qCombo', 'Use [Q]', true);
       Menu.Checkbox('wCombo', 'Use [W]', true);
@@ -293,7 +293,7 @@ function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]): number {
 }
 
 function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]): boolean {
-  const distanceTarget = Player.Position.Distance(target.Position);
+  const distanceTarget = target.EdgeDistance(Player.Position);
   //const isInPowPowRange = distanceTarget < powPowRange + target.BoundingRadius;
   const isInFishBonesRange =
     distanceTarget < fishbonesRange + target.BoundingRadius;

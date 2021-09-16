@@ -92,7 +92,7 @@ function GetAoeCount(target, enemies)
     return count
 end
 function ShouldSwap(target, enemies)
-    local distanceTarget = Player.Position:Distance(target.Position)
+    local distanceTarget = target:EdgeDistance(Player.Position)
     local isInFishBonesRange = distanceTarget < (fishbonesRange + target.BoundingRadius)
     local notInOverswaprange = distanceTarget < ((525 + target.BoundingRadius) - Menu.Get("overSwap"))
     local isFullStack = fishbonesStack == 3
@@ -511,7 +511,7 @@ local function InitMenu()
         "PoncheJinx",
         "PoncheJinx",
         function()
-            Menu.Text("v1.0", true)
+            Menu.Text("v1.1.0", true)
             Menu.NewTree(
                 "combo",
                 "Combo",
