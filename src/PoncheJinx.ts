@@ -147,7 +147,7 @@ function InitMenu(): void {
       Menu.Dropdown('eComboHit', 'Hitchance', 4, hitchances);
     });
     Menu.NewTree('harass', 'Harass', function () {
-      Menu.Checkbox('qHarass', 'Use [Q]', true);
+      Menu.Checkbox('qHarass', 'Use [Q]', false);
       Menu.Slider('qHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
       Menu.Checkbox('wHarass', 'Use [W]', true);
       Menu.Dropdown('wHarassHit', 'Hitchance', 4, hitchances);
@@ -193,6 +193,7 @@ function InitMenu(): void {
       Menu.Slider('rMaxRange', 'Max. distance', 4000, 3000, 6000, 100);
     });
     Menu.NewTree('draw', 'Draw Config', function () {
+      Menu.Checkbox('qDraw', 'Draw [Q]', true);
       Menu.Checkbox('wDraw', 'Draw [w]', true);
       Menu.Checkbox('eDraw', 'Draw [E]', true);
     });
@@ -263,6 +264,13 @@ function OnDraw(): void {
   }
   if (Menu.Get('eDraw')) {
     Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10);
+  }
+  if (Menu.Get('qDraw')) {
+    if (isFishBones) {
+      Core.Renderer.DrawCircle3D(Player.Position, powPowRange + 100, 10);
+    } else {
+      Core.Renderer.DrawCircle3D(Player.Position, fishbonesRange + 100, 10);
+    }
   }
 }
 

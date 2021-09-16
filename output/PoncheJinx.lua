@@ -66,6 +66,13 @@ function OnDraw()
     if Menu.Get("eDraw") then
         Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10)
     end
+    if Menu.Get("qDraw") then
+        if isFishBones then
+            Core.Renderer.DrawCircle3D(Player.Position, powPowRange + 100, 10)
+        else
+            Core.Renderer.DrawCircle3D(Player.Position, fishbonesRange + 100, 10)
+        end
+    end
 end
 function GetHitChance(id)
     return Menu.Get(id) + 2
@@ -131,9 +138,9 @@ function tryW(hitchance)
     wInput.Delay = GetWDelay()
     local WCast = SpellLib.Skillshot(wInput)
     repeat
-        local ____switch51 = Menu.Get("wMode")
-        local ____cond51 = ____switch51 == 0
-        if ____cond51 then
+        local ____switch54 = Menu.Get("wMode")
+        local ____cond54 = ____switch54 == 0
+        if ____cond54 then
             do
                 if target.Position:Distance(Player.Position) > powPowRange then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -141,8 +148,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond51 = ____cond51 or (____switch51 == 1)
-        if ____cond51 then
+        ____cond54 = ____cond54 or (____switch54 == 1)
+        if ____cond54 then
             do
                 if target.Position:Distance(Player.Position) > Menu.Get("wMinRange") then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -150,8 +157,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond51 = ____cond51 or (____switch51 == 2)
-        if ____cond51 then
+        ____cond54 = ____cond54 or (____switch54 == 2)
+        if ____cond54 then
             return WCast:CastOnHitChance(target, hitchance)
         end
         do
@@ -193,12 +200,12 @@ function tryR()
                     HealthPred.GetHealthPrediction(enemy, timeToHit, true)
                 }
                 if (health[1] <= 0) or (R:GetDamage(enemy) < health[1]) then
-                    goto __continue62
+                    goto __continue65
                 end
                 repeat
-                    local ____switch65 = Menu.Get("rMode")
-                    local ____cond65 = ____switch65 == 0
-                    if ____cond65 then
+                    local ____switch68 = Menu.Get("rMode")
+                    local ____cond68 = ____switch68 == 0
+                    if ____cond68 then
                         do
                             if enemy:Distance(Player.Position) > powPowRange then
                                 return RC:CastOnHitChance(
@@ -209,8 +216,8 @@ function tryR()
                             break
                         end
                     end
-                    ____cond65 = ____cond65 or (____switch65 == 1)
-                    if ____cond65 then
+                    ____cond68 = ____cond68 or (____switch68 == 1)
+                    if ____cond68 then
                         do
                             local distance = enemy:Distance(Player.Position)
                             if (distance > Menu.Get("rMinRange")) and (distance < Menu.Get("rMaxRange")) then
@@ -222,8 +229,8 @@ function tryR()
                             break
                         end
                     end
-                    ____cond65 = ____cond65 or (____switch65 == 2)
-                    if ____cond65 then
+                    ____cond68 = ____cond68 or (____switch68 == 2)
+                    if ____cond68 then
                         do
                             return RC:CastOnHitChance(
                                 enemy,
@@ -237,7 +244,7 @@ function tryR()
                 until true
             end
         end
-        ::__continue62::
+        ::__continue65::
     end
     return false
 end
@@ -377,9 +384,9 @@ function OnTick()
     end
     local orbwalkerMode = Orbwalker.GetMode()
     repeat
-        local ____switch112 = orbwalkerMode
-        local ____cond112 = ____switch112 == "Combo"
-        if ____cond112 then
+        local ____switch115 = orbwalkerMode
+        local ____cond115 = ____switch115 == "Combo"
+        if ____cond115 then
             do
                 if #enemies == 0 then
                     return
@@ -388,22 +395,22 @@ function OnTick()
                 break
             end
         end
-        ____cond112 = ____cond112 or (____switch112 == "Harass")
-        if ____cond112 then
+        ____cond115 = ____cond115 or (____switch115 == "Harass")
+        if ____cond115 then
             do
                 Harass(enemies)
                 break
             end
         end
-        ____cond112 = ____cond112 or (____switch112 == "Lasthit")
-        if ____cond112 then
+        ____cond115 = ____cond115 or (____switch115 == "Lasthit")
+        if ____cond115 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond112 = ____cond112 or (____switch112 == "Waveclear")
-        if ____cond112 then
+        ____cond115 = ____cond115 or (____switch115 == "Waveclear")
+        if ____cond115 then
             do
                 WaveClear()
                 break
@@ -512,7 +519,7 @@ local function InitMenu()
                 "harass",
                 "Harass",
                 function()
-                    Menu.Checkbox("qHarass", "Use [Q]", true)
+                    Menu.Checkbox("qHarass", "Use [Q]", false)
                     Menu.Slider("qHarassMana", "Min. Mana % ", 40, 0, 100, 5)
                     Menu.Checkbox("wHarass", "Use [W]", true)
                     Menu.Dropdown("wHarassHit", "Hitchance", 4, hitchances)
@@ -590,6 +597,7 @@ local function InitMenu()
                 "draw",
                 "Draw Config",
                 function()
+                    Menu.Checkbox("qDraw", "Draw [Q]", true)
                     Menu.Checkbox("wDraw", "Draw [w]", true)
                     Menu.Checkbox("eDraw", "Draw [E]", true)
                 end
