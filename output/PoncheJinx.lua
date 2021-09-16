@@ -60,18 +60,42 @@ function OnDraw()
     if not Player.IsOnScreen then
         return
     end
-    if Menu.Get("wDraw") then
-        Core.Renderer.DrawCircle3D(Player.Position, wInput.Range, 10)
-    end
-    if Menu.Get("eDraw") then
-        Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10)
-    end
     if Menu.Get("qDraw") then
         if isFishBones then
-            Core.Renderer.DrawCircle3D(Player.Position, powPowRange + 100, 10)
+            Core.Renderer.DrawCircle3D(
+                Player.Position,
+                powPowRange + 100,
+                10,
+                1,
+                Menu.Get("qColor")
+            )
         else
-            Core.Renderer.DrawCircle3D(Player.Position, fishbonesRange + 100, 10)
+            Core.Renderer.DrawCircle3D(
+                Player.Position,
+                fishbonesRange + 100,
+                10,
+                1,
+                Menu.Get("qColor")
+            )
         end
+    end
+    if Menu.Get("wDraw") then
+        Core.Renderer.DrawCircle3D(
+            Player.Position,
+            wInput.Range,
+            10,
+            1,
+            Menu.Get("wColor")
+        )
+    end
+    if Menu.Get("eDraw") then
+        Core.Renderer.DrawCircle3D(
+            Player.Position,
+            eInput.Range,
+            10,
+            1,
+            Menu.Get("eColor")
+        )
     end
 end
 function GetHitChance(id)
@@ -103,12 +127,6 @@ function ShouldSwap(target, enemies)
     return (isInFishBonesRange and notInOverswaprange) and (((not Menu.Get("qAOEFullstack")) or (not isFullStack)) or (not canAoe))
 end
 function HasMana(minPercent)
-    print(
-        tostring(Player.ManaPercent * 100)
-    )
-    print(
-        tostring(minPercent)
-    )
     return (Player.ManaPercent * 100) >= minPercent
 end
 function GetWDelay()
@@ -615,8 +633,11 @@ local function InitMenu()
                 "Draw Config",
                 function()
                     Menu.Checkbox("qDraw", "Draw [Q]", true)
+                    Menu.ColorPicker("qColor", "", 4261413119)
                     Menu.Checkbox("wDraw", "Draw [w]", true)
+                    Menu.ColorPicker("wColor", "", 7405311)
                     Menu.Checkbox("eDraw", "Draw [E]", true)
+                    Menu.ColorPicker("eColor", "", 4009689343)
                 end
             )
         end

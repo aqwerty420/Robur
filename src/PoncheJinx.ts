@@ -193,8 +193,11 @@ function InitMenu(): void {
     });
     Menu.NewTree('draw', 'Draw Config', function () {
       Menu.Checkbox('qDraw', 'Draw [Q]', true);
+      Menu.ColorPicker('qColor', '', 4261413119);
       Menu.Checkbox('wDraw', 'Draw [w]', true);
+      Menu.ColorPicker('wColor', '', 7405311);
       Menu.Checkbox('eDraw', 'Draw [E]', true);
+      Menu.ColorPicker('eColor', '', 4009689343);
     });
   });
 }
@@ -258,18 +261,42 @@ function OnHeroImmobilized(
 
 function OnDraw(): void {
   if (!Player.IsOnScreen) return;
-  if (Menu.Get('wDraw')) {
-    Core.Renderer.DrawCircle3D(Player.Position, wInput.Range, 10);
-  }
-  if (Menu.Get('eDraw')) {
-    Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10);
-  }
   if (Menu.Get('qDraw')) {
     if (isFishBones) {
-      Core.Renderer.DrawCircle3D(Player.Position, powPowRange + 100, 10);
+      Core.Renderer.DrawCircle3D(
+        Player.Position,
+        powPowRange + 100,
+        10,
+        1,
+        Menu.Get('qColor')
+      );
     } else {
-      Core.Renderer.DrawCircle3D(Player.Position, fishbonesRange + 100, 10);
+      Core.Renderer.DrawCircle3D(
+        Player.Position,
+        fishbonesRange + 100,
+        10,
+        1,
+        Menu.Get('qColor')
+      );
     }
+  }
+  if (Menu.Get('wDraw')) {
+    Core.Renderer.DrawCircle3D(
+      Player.Position,
+      wInput.Range,
+      10,
+      1,
+      Menu.Get('wColor')
+    );
+  }
+  if (Menu.Get('eDraw')) {
+    Core.Renderer.DrawCircle3D(
+      Player.Position,
+      eInput.Range,
+      10,
+      1,
+      Menu.Get('eColor')
+    );
   }
 }
 
@@ -311,8 +338,6 @@ function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]): boolean {
 }
 
 function HasMana(minPercent: number): boolean {
-  print((Player.ManaPercent * 100).toString());
-  print(minPercent.toString());
   return Player.ManaPercent * 100 >= minPercent;
 }
 
