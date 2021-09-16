@@ -539,7 +539,7 @@ local function InitMenu()
         "PoncheJinx",
         "PoncheJinx",
         function()
-            Menu.Text("v1.3.0", true)
+            Menu.Text("v1.4.0", true)
             Menu.NewTree(
                 "combo",
                 "Combo",

@@ -138,7 +138,7 @@ function InitMenu(): void {
   }
   if (enemiesCount === 0) enemiesCount = 1;
   Menu.RegisterMenu('PoncheJinx', 'PoncheJinx', function () {
-    Menu.Text('v1.3.0', true);
+    Menu.Text('v1.4.0', true);
     Menu.NewTree('combo', 'Combo', function () {
       Menu.Checkbox('qCombo', 'Use [Q]', true);
       Menu.Checkbox('wCombo', 'Use [W]', true);
