@@ -138,7 +138,7 @@ function InitMenu(): void {
   }
   if (enemiesCount === 0) enemiesCount = 1;
   Menu.RegisterMenu('PoncheJinx', 'PoncheJinx', function () {
-    Menu.Text('v1.2.0', true);
+    Menu.Text('v1.3.0', true);
     Menu.NewTree('combo', 'Combo', function () {
       Menu.Checkbox('qCombo', 'Use [Q]', true);
       Menu.Checkbox('wCombo', 'Use [W]', true);
@@ -425,7 +425,13 @@ function Combo(enemies: AIHeroClient[]): void {
 }
 
 function WaveClear(): void {
-  if (!Menu.Get('qWaveClear') || !Q.IsReady()) return;
+  if (!Q.IsReady()) return;
+  if (!Menu.Get('qWaveClear')) {
+    if (!isFishBones) {
+      Q.Cast();
+    }
+    return;
+  }
   if (!HasMana(Menu.Get('qWaveClearMana'))) {
     if (!isFishBones) Q.Cast();
     return;
@@ -471,6 +477,8 @@ function Harass(enemies: AIHeroClient[]): void {
     } else if (HasMana(Menu.Get('qHarassMana')) && enemies.length > 0) {
       if (tryQ(enemies)) return;
     }
+  } else {
+    if (!isFishBones && Q.IsReady() && Q.Cast()) return;
   }
   if (Menu.Get('wHarass') && HasMana(Menu.Get('wHarassMana'))) {
     if (tryW(GetHitChance('wHarassHit'))) return;

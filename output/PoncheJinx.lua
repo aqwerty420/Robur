@@ -267,7 +267,13 @@ function Combo(enemies)
     end
 end
 function WaveClear()
-    if (not Menu.Get("qWaveClear")) or (not Q:IsReady()) then
+    if not Q:IsReady() then
+        return
+    end
+    if not Menu.Get("qWaveClear") then
+        if not isFishBones then
+            Q:Cast()
+        end
         return
     end
     if not HasMana(
@@ -337,6 +343,10 @@ function Harass(enemies)
                 return
             end
         end
+    else
+        if ((not isFishBones) and Q:IsReady()) and Q:Cast() then
+            return
+        end
     end
     if Menu.Get("wHarass") and HasMana(
         Menu.Get("wHarassMana")
@@ -392,9 +402,9 @@ function OnTick()
     end
     local orbwalkerMode = Orbwalker.GetMode()
     repeat
-        local ____switch118 = orbwalkerMode
-        local ____cond118 = ____switch118 == "Combo"
-        if ____cond118 then
+        local ____switch122 = orbwalkerMode
+        local ____cond122 = ____switch122 == "Combo"
+        if ____cond122 then
             do
                 if #enemies == 0 then
                     return
@@ -403,22 +413,22 @@ function OnTick()
                 break
             end
         end
-        ____cond118 = ____cond118 or (____switch118 == "Harass")
-        if ____cond118 then
+        ____cond122 = ____cond122 or (____switch122 == "Harass")
+        if ____cond122 then
             do
                 Harass(enemies)
                 break
             end
         end
-        ____cond118 = ____cond118 or (____switch118 == "Lasthit")
-        if ____cond118 then
+        ____cond122 = ____cond122 or (____switch122 == "Lasthit")
+        if ____cond122 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond118 = ____cond118 or (____switch118 == "Waveclear")
-        if ____cond118 then
+        ____cond122 = ____cond122 or (____switch122 == "Waveclear")
+        if ____cond122 then
             do
                 WaveClear()
                 break
@@ -511,7 +521,7 @@ local function InitMenu()
         "PoncheJinx",
         "PoncheJinx",
         function()
-            Menu.Text("v1.2.0", true)
+            Menu.Text("v1.3.0", true)
             Menu.NewTree(
                 "combo",
                 "Combo",
