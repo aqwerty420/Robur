@@ -43,7 +43,7 @@ interface Skillshot extends SpellBase {
    */
   CastOnHitChance(
     target: AIBaseClient,
-    minHitChance: keyof Enums_HitChance
+    minHitChance: keyof Enums_HitChance | number
   ): boolean;
   GetBestLinearCastPos(
     targets: Vector[] | AIBaseClient[]

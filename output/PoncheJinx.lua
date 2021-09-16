@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, rSpeed1, rSpeed2, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetAoeCount, ShouldSwap, HasMana, GetWDelay, tryQ, tryW, tryE, tryR, Combo, WaveClear, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
+local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, rSpeed1, rSpeed2, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetHitChance, GetAoeCount, ShouldSwap, HasMana, GetWDelay, tryQ, tryW, tryE, tryR, Combo, WaveClear, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -66,6 +66,9 @@ function OnDraw()
     if Menu.Get("eDraw") then
         Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10)
     end
+end
+function GetHitChance(id)
+    return Menu.Get(id) + 2
 end
 function GetAoeCount(target, enemies)
     local count = 0
@@ -128,9 +131,9 @@ function tryW(hitchance)
     wInput.Delay = GetWDelay()
     local WCast = SpellLib.Skillshot(wInput)
     repeat
-        local ____switch50 = Menu.Get("wMode")
-        local ____cond50 = ____switch50 == 0
-        if ____cond50 then
+        local ____switch51 = Menu.Get("wMode")
+        local ____cond51 = ____switch51 == 0
+        if ____cond51 then
             do
                 if target.Position:Distance(Player.Position) > powPowRange then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -138,8 +141,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond50 = ____cond50 or (____switch50 == 1)
-        if ____cond50 then
+        ____cond51 = ____cond51 or (____switch51 == 1)
+        if ____cond51 then
             do
                 if target.Position:Distance(Player.Position) > Menu.Get("wMinRange") then
                     return WCast:CastOnHitChance(target, hitchance)
@@ -147,8 +150,8 @@ function tryW(hitchance)
                 break
             end
         end
-        ____cond50 = ____cond50 or (____switch50 == 2)
-        if ____cond50 then
+        ____cond51 = ____cond51 or (____switch51 == 2)
+        if ____cond51 then
             return WCast:CastOnHitChance(target, hitchance)
         end
         do
@@ -190,41 +193,41 @@ function tryR()
                     HealthPred.GetHealthPrediction(enemy, timeToHit, true)
                 }
                 if (health[1] <= 0) or (R:GetDamage(enemy) < health[1]) then
-                    goto __continue61
+                    goto __continue62
                 end
                 repeat
-                    local ____switch64 = Menu.Get("rMode")
-                    local ____cond64 = ____switch64 == 0
-                    if ____cond64 then
+                    local ____switch65 = Menu.Get("rMode")
+                    local ____cond65 = ____switch65 == 0
+                    if ____cond65 then
                         do
                             if enemy:Distance(Player.Position) > powPowRange then
                                 return RC:CastOnHitChance(
                                     enemy,
-                                    Menu.Get("rHit")
+                                    GetHitChance("rHit")
                                 )
                             end
                             break
                         end
                     end
-                    ____cond64 = ____cond64 or (____switch64 == 1)
-                    if ____cond64 then
+                    ____cond65 = ____cond65 or (____switch65 == 1)
+                    if ____cond65 then
                         do
                             local distance = enemy:Distance(Player.Position)
                             if (distance > Menu.Get("rMinRange")) and (distance < Menu.Get("rMaxRange")) then
                                 return RC:CastOnHitChance(
                                     enemy,
-                                    Menu.Get("rHit")
+                                    GetHitChance("rHit")
                                 )
                             end
                             break
                         end
                     end
-                    ____cond64 = ____cond64 or (____switch64 == 2)
-                    if ____cond64 then
+                    ____cond65 = ____cond65 or (____switch65 == 2)
+                    if ____cond65 then
                         do
                             return RC:CastOnHitChance(
                                 enemy,
-                                Menu.Get("rHit")
+                                GetHitChance("rHit")
                             )
                         end
                     end
@@ -234,7 +237,7 @@ function tryR()
                 until true
             end
         end
-        ::__continue61::
+        ::__continue62::
     end
     return false
 end
@@ -242,7 +245,7 @@ function Combo(enemies)
     if Menu.Get("eCombo") then
         if tryE(
             enemies,
-            Menu.Get("eComboHit")
+            GetHitChance("eComboHit")
         ) then
             return
         end
@@ -254,7 +257,7 @@ function Combo(enemies)
     end
     if Menu.Get("wCombo") then
         if tryW(
-            Menu.Get("wComboHit")
+            GetHitChance("wComboHit")
         ) then
             return
         end
@@ -300,7 +303,7 @@ function Harass(enemies)
     ) then
         if tryE(
             enemies,
-            Menu.Get("eHarassHit")
+            GetHitChance("eHarassHit")
         ) then
             return
         end
@@ -324,7 +327,7 @@ function Harass(enemies)
         Menu.Get("wHarassMana")
     ) then
         if tryW(
-            Menu.Get("wHarassHit")
+            GetHitChance("wHarassHit")
         ) then
             return
         end
@@ -374,9 +377,9 @@ function OnTick()
     end
     local orbwalkerMode = Orbwalker.GetMode()
     repeat
-        local ____switch111 = orbwalkerMode
-        local ____cond111 = ____switch111 == "Combo"
-        if ____cond111 then
+        local ____switch112 = orbwalkerMode
+        local ____cond112 = ____switch112 == "Combo"
+        if ____cond112 then
             do
                 if #enemies == 0 then
                     return
@@ -385,22 +388,22 @@ function OnTick()
                 break
             end
         end
-        ____cond111 = ____cond111 or (____switch111 == "Harass")
-        if ____cond111 then
+        ____cond112 = ____cond112 or (____switch112 == "Harass")
+        if ____cond112 then
             do
                 Harass(enemies)
                 break
             end
         end
-        ____cond111 = ____cond111 or (____switch111 == "Lasthit")
-        if ____cond111 then
+        ____cond112 = ____cond112 or (____switch112 == "Lasthit")
+        if ____cond112 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond111 = ____cond111 or (____switch111 == "Waveclear")
-        if ____cond111 then
+        ____cond112 = ____cond112 or (____switch112 == "Waveclear")
+        if ____cond112 then
             do
                 WaveClear()
                 break
@@ -450,15 +453,13 @@ wModes[1] = "Out of AA range"
 wModes[2] = "Min. distance"
 wModes[3] = "Always"
 local hitchances = {}
-hitchances[1] = "Collision"
-hitchances[2] = "Out Of Range"
-hitchances[3] = "Very Low"
-hitchances[4] = "Low"
-hitchances[5] = "Medium"
-hitchances[6] = "High"
-hitchances[7] = "Very High"
-hitchances[8] = "Dashing"
-hitchances[9] = "Immobile"
+hitchances[1] = "Very Low"
+hitchances[2] = "Low"
+hitchances[3] = "Medium"
+hitchances[4] = "High"
+hitchances[5] = "Very High"
+hitchances[6] = "Dashing"
+hitchances[7] = "Immobile"
 local function InitLog()
     module("PoncheJinx", package.seeall, log.setup)
     clean.module("PoncheJinx", clean.seeall, log.setup)
@@ -502,9 +503,9 @@ local function InitMenu()
                 function()
                     Menu.Checkbox("qCombo", "Use [Q]", true)
                     Menu.Checkbox("wCombo", "Use [W]", true)
-                    Menu.Dropdown("wComboHit", "Hitchance", 4, hitchances)
+                    Menu.Dropdown("wComboHit", "Hitchance", 3, hitchances)
                     Menu.Checkbox("eCombo", "Use [E]", true)
-                    Menu.Dropdown("eComboHit", "Hitchance", 6, hitchances)
+                    Menu.Dropdown("eComboHit", "Hitchance", 4, hitchances)
                 end
             )
             Menu.NewTree(
@@ -514,10 +515,10 @@ local function InitMenu()
                     Menu.Checkbox("qHarass", "Use [Q]", true)
                     Menu.Slider("qHarassMana", "Min. Mana % ", 40, 0, 100, 5)
                     Menu.Checkbox("wHarass", "Use [W]", true)
-                    Menu.Dropdown("wHarassHit", "Hitchance", 5, hitchances)
+                    Menu.Dropdown("wHarassHit", "Hitchance", 4, hitchances)
                     Menu.Slider("wHarassMana", "Min. Mana % ", 40, 0, 100, 5)
                     Menu.Checkbox("eHarass", "Use [E]", true)
-                    Menu.Dropdown("eHarassHit", "Hitchance", 7, hitchances)
+                    Menu.Dropdown("eHarassHit", "Hitchance", 5, hitchances)
                     Menu.Slider("eHarassMana", "Min. Mana % ", 0, 0, 100, 5)
                 end
             )
@@ -552,7 +553,7 @@ local function InitMenu()
                 "wConfig",
                 "[W] Config",
                 function()
-                    Menu.Dropdown("wMode", "Cast mode: ", 1, wModes)
+                    Menu.Dropdown("wMode", "Cast mode: ", 0, wModes)
                     Menu.Slider("wMinRange", "Min. distance", 900, 0, wInput.Range, 50)
                 end
             )
@@ -579,9 +580,9 @@ local function InitMenu()
                 "[R] Config",
                 function()
                     Menu.Checkbox("rAuto", "Auto [R]", true)
-                    Menu.Dropdown("rHit", "Hitchance", 6, hitchances)
+                    Menu.Dropdown("rHit", "Hitchance", 4, hitchances)
                     Menu.Dropdown("rMode", "Cast mode: ", 1, rModes)
-                    Menu.Slider("rMinRange", "Min. distance", 1000, 0, 3000, 100)
+                    Menu.Slider("rMinRange", "Min. distance", 900, 0, 3000, 100)
                     Menu.Slider("rMaxRange", "Max. distance", 4000, 3000, 6000, 100)
                 end
             )

@@ -1,12 +1,3 @@
-/*
-
-TO_DO:
-
-R
-Wave Clear
-
-*/
-
 if (Player.CharName != 'Jinx') {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -110,15 +101,13 @@ wModes.set(2, 'Min. distance');
 wModes.set(3, 'Always');
 
 const hitchances = new LuaTable();
-hitchances.set(1, 'Collision');
-hitchances.set(2, 'Out Of Range');
-hitchances.set(3, 'Very Low');
-hitchances.set(4, 'Low');
-hitchances.set(5, 'Medium');
-hitchances.set(6, 'High');
-hitchances.set(7, 'Very High');
-hitchances.set(8, 'Dashing');
-hitchances.set(9, 'Immobile');
+hitchances.set(1, 'Very Low');
+hitchances.set(2, 'Low');
+hitchances.set(3, 'Medium');
+hitchances.set(4, 'High');
+hitchances.set(5, 'Very High');
+hitchances.set(6, 'Dashing');
+hitchances.set(7, 'Immobile');
 
 function InitLog(): void {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -153,18 +142,18 @@ function InitMenu(): void {
     Menu.NewTree('combo', 'Combo', function () {
       Menu.Checkbox('qCombo', 'Use [Q]', true);
       Menu.Checkbox('wCombo', 'Use [W]', true);
-      Menu.Dropdown('wComboHit', 'Hitchance', 4, hitchances);
+      Menu.Dropdown('wComboHit', 'Hitchance', 3, hitchances);
       Menu.Checkbox('eCombo', 'Use [E]', true);
-      Menu.Dropdown('eComboHit', 'Hitchance', 6, hitchances);
+      Menu.Dropdown('eComboHit', 'Hitchance', 4, hitchances);
     });
     Menu.NewTree('harass', 'Harass', function () {
       Menu.Checkbox('qHarass', 'Use [Q]', true);
       Menu.Slider('qHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
       Menu.Checkbox('wHarass', 'Use [W]', true);
-      Menu.Dropdown('wHarassHit', 'Hitchance', 5, hitchances);
+      Menu.Dropdown('wHarassHit', 'Hitchance', 4, hitchances);
       Menu.Slider('wHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
       Menu.Checkbox('eHarass', 'Use [E]', true);
-      Menu.Dropdown('eHarassHit', 'Hitchance', 7, hitchances);
+      Menu.Dropdown('eHarassHit', 'Hitchance', 5, hitchances);
       Menu.Slider('eHarassMana', 'Min. Mana % ', 0, 0, 100, 5);
     });
     Menu.NewTree('lastHit', 'Last Hit', function () {
@@ -183,7 +172,7 @@ function InitMenu(): void {
       Menu.Slider('overSwap', 'Anti Overswap', 60, 0, 150, 10);
     });
     Menu.NewTree('wConfig', '[W] Config', function () {
-      Menu.Dropdown('wMode', 'Cast mode: ', 1, wModes);
+      Menu.Dropdown('wMode', 'Cast mode: ', 0, wModes);
       Menu.Slider('wMinRange', 'Min. distance', 900, 0, wInput.Range, 50);
     });
     Menu.NewTree('eConfig', '[E] Config', function () {
@@ -198,9 +187,9 @@ function InitMenu(): void {
     });
     Menu.NewTree('rConfig', '[R] Config', function () {
       Menu.Checkbox('rAuto', 'Auto [R]', true);
-      Menu.Dropdown('rHit', 'Hitchance', 6, hitchances);
+      Menu.Dropdown('rHit', 'Hitchance', 4, hitchances);
       Menu.Dropdown('rMode', 'Cast mode: ', 1, rModes);
-      Menu.Slider('rMinRange', 'Min. distance', 1000, 0, 3000, 100);
+      Menu.Slider('rMinRange', 'Min. distance', 900, 0, 3000, 100);
       Menu.Slider('rMaxRange', 'Max. distance', 4000, 3000, 6000, 100);
     });
     Menu.NewTree('draw', 'Draw Config', function () {
@@ -275,6 +264,10 @@ function OnDraw(): void {
   if (Menu.Get('eDraw')) {
     Core.Renderer.DrawCircle3D(Player.Position, eInput.Range, 10);
   }
+}
+
+function GetHitChance(id: string): keyof Enums_HitChance {
+  return Menu.Get(id) + 2;
 }
 
 function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]): number {
@@ -386,7 +379,7 @@ function tryR(): boolean {
       switch (Menu.Get('rMode')) {
         case 0: {
           if (enemy.Distance(Player.Position) > powPowRange) {
-            return RC.CastOnHitChance(enemy, Menu.Get('rHit'));
+            return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
           }
           break;
         }
@@ -396,12 +389,12 @@ function tryR(): boolean {
             distance > Menu.Get('rMinRange') &&
             distance < Menu.Get('rMaxRange')
           ) {
-            return RC.CastOnHitChance(enemy, Menu.Get('rHit'));
+            return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
           }
           break;
         }
         case 2: {
-          return RC.CastOnHitChance(enemy, Menu.Get('rHit'));
+          return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
         }
         default:
           break;
@@ -413,13 +406,13 @@ function tryR(): boolean {
 
 function Combo(enemies: AIHeroClient[]): void {
   if (Menu.Get('eCombo')) {
-    if (tryE(enemies, Menu.Get('eComboHit'))) return;
+    if (tryE(enemies, GetHitChance('eComboHit'))) return;
   }
   if (Menu.Get('qCombo')) {
     if (tryQ(enemies)) return;
   }
   if (Menu.Get('wCombo')) {
-    if (tryW(Menu.Get('wComboHit'))) return;
+    if (tryW(GetHitChance('wComboHit'))) return;
   }
 }
 
@@ -454,7 +447,7 @@ function WaveClear(): void {
 
 function Harass(enemies: AIHeroClient[]): void {
   if (Menu.Get('eHarass') && HasMana(Menu.Get('eHarassMana'))) {
-    if (tryE(enemies, Menu.Get('eHarassHit'))) return;
+    if (tryE(enemies, GetHitChance('eHarassHit'))) return;
   }
   if (Menu.Get('qHarass')) {
     if (
@@ -468,7 +461,7 @@ function Harass(enemies: AIHeroClient[]): void {
     }
   }
   if (Menu.Get('wHarass') && HasMana(Menu.Get('wHarassMana'))) {
-    if (tryW(Menu.Get('wHarassHit'))) return;
+    if (tryW(GetHitChance('wHarassHit'))) return;
   }
 }
 
