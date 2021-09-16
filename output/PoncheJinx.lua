@@ -28,7 +28,7 @@ function __TS__ArrayPush(arr, ...)
 end
 
 local ____exports = {}
-local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, rSpeed1, rSpeed2, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetHitChance, GetAoeCount, ShouldSwap, HasMana, GetWDelay, tryQ, tryW, tryE, tryR, Combo, WaveClear, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
+local Core, ObjectManager, Game, SpellSlots, Orbwalker, Menu, SpellLib, HealthPred, TargetSelector, fishbonesStack, fishbonesRange, isFishBones, powPowRange, rSpeed1, rSpeed2, Q, wInput, W, eInput, E, rInput, R, GetValidNearbyHeroes, OnGapclose, OnHeroImmobilized, OnDraw, GetHitChance, GetAoeCount, ShouldSwap, HasMana, GetWDelay, tryQ, tryW, tryE, tryR, Combo, WaveClear, IsAnyoneInRange, Harass, HasStatik, LastHit, Auto, UpdateStats, OnTick
 function GetValidNearbyHeroes(team)
     local heroes = {}
     for key, obj in pairs(
@@ -189,19 +189,16 @@ function tryR()
     for key, obj in pairs(
         ObjectManager.Get("enemy", "heroes")
     ) do
-        do
-            local enemy = obj
-            if TargetSelector:IsValidTarget(enemy) then
-                local distanceToHit = Player:Distance(enemy.Position)
-                local timeToHit = rInput.Delay + (((distanceToHit <= 1350) and (function() return distanceToHit / rSpeed1 end)) or (function() return (1350 / rSpeed1) + ((distanceToHit - 1350) / rSpeed2) end))()
-                rInput.Speed = distanceToHit / timeToHit
-                local RC = SpellLib.Skillshot(rInput)
-                local health = {
-                    HealthPred.GetHealthPrediction(enemy, timeToHit, true)
-                }
-                if (health[1] <= 0) or (R:GetDamage(enemy) < health[1]) then
-                    goto __continue65
-                end
+        local enemy = obj
+        if TargetSelector:IsValidTarget(enemy) then
+            local distanceToHit = Player:Distance(enemy.Position)
+            local timeToHit = rInput.Delay + (((distanceToHit <= 1350) and (function() return distanceToHit / rSpeed1 end)) or (function() return (1350 / rSpeed1) + ((distanceToHit - 1350) / rSpeed2) end))()
+            rInput.Speed = distanceToHit / timeToHit
+            local RC = SpellLib.Skillshot(rInput)
+            local health = {
+                HealthPred.GetHealthPrediction(enemy, timeToHit, true)
+            }
+            if (health[1] > 0) and (R:GetDamage(enemy) > health[1]) then
                 repeat
                     local ____switch68 = Menu.Get("rMode")
                     local ____cond68 = ____switch68 == 0
@@ -244,7 +241,6 @@ function tryR()
                 until true
             end
         end
-        ::__continue65::
     end
     return false
 end
@@ -304,6 +300,18 @@ function WaveClear()
         end
     end
 end
+function IsAnyoneInRange(enemies)
+    do
+        local i = 0
+        while i < #enemies do
+            if enemies[i + 1]:EdgeDistance(Player.Position) <= (powPowRange + 50) then
+                return true
+            end
+            i = i + 1
+        end
+    end
+    return false
+end
 function Harass(enemies)
     if Menu.Get("eHarass") and HasMana(
         Menu.Get("eHarassMana")
@@ -316,10 +324,10 @@ function Harass(enemies)
         end
     end
     if Menu.Get("qHarass") then
-        if ((not isFishBones) and ((#enemies == 0) or (not HasMana(
+        if (not IsAnyoneInRange(enemies)) or (not HasMana(
             Menu.Get("qHarassMana")
-        )))) and Q:IsReady() then
-            if Q:Cast() then
+        )) then
+            if ((not isFishBones) and Q:IsReady()) and Q:Cast() then
                 return
             end
         elseif HasMana(
@@ -384,9 +392,9 @@ function OnTick()
     end
     local orbwalkerMode = Orbwalker.GetMode()
     repeat
-        local ____switch115 = orbwalkerMode
-        local ____cond115 = ____switch115 == "Combo"
-        if ____cond115 then
+        local ____switch118 = orbwalkerMode
+        local ____cond118 = ____switch118 == "Combo"
+        if ____cond118 then
             do
                 if #enemies == 0 then
                     return
@@ -395,22 +403,22 @@ function OnTick()
                 break
             end
         end
-        ____cond115 = ____cond115 or (____switch115 == "Harass")
-        if ____cond115 then
+        ____cond118 = ____cond118 or (____switch118 == "Harass")
+        if ____cond118 then
             do
                 Harass(enemies)
                 break
             end
         end
-        ____cond115 = ____cond115 or (____switch115 == "Lasthit")
-        if ____cond115 then
+        ____cond118 = ____cond118 or (____switch118 == "Lasthit")
+        if ____cond118 then
             do
                 LastHit()
                 break
             end
         end
-        ____cond115 = ____cond115 or (____switch115 == "Waveclear")
-        if ____cond115 then
+        ____cond118 = ____cond118 or (____switch118 == "Waveclear")
+        if ____cond118 then
             do
                 WaveClear()
                 break
@@ -519,7 +527,7 @@ local function InitMenu()
                 "harass",
                 "Harass",
                 function()
-                    Menu.Checkbox("qHarass", "Use [Q]", false)
+                    Menu.Checkbox("qHarass", "Use [Q]", true)
                     Menu.Slider("qHarassMana", "Min. Mana % ", 40, 0, 100, 5)
                     Menu.Checkbox("wHarass", "Use [W]", true)
                     Menu.Dropdown("wHarassHit", "Hitchance", 4, hitchances)

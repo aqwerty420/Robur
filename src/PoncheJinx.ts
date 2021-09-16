@@ -147,7 +147,7 @@ function InitMenu(): void {
       Menu.Dropdown('eComboHit', 'Hitchance', 4, hitchances);
     });
     Menu.NewTree('harass', 'Harass', function () {
-      Menu.Checkbox('qHarass', 'Use [Q]', false);
+      Menu.Checkbox('qHarass', 'Use [Q]', true);
       Menu.Slider('qHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
       Menu.Checkbox('wHarass', 'Use [W]', true);
       Menu.Dropdown('wHarassHit', 'Hitchance', 4, hitchances);
@@ -383,29 +383,30 @@ function tryR(): boolean {
       rInput.Speed = distanceToHit / timeToHit;
       const RC = SpellLib.Skillshot(rInput);
       const health = HealthPred.GetHealthPrediction(enemy, timeToHit, true);
-      if (health[0] <= 0 || R.GetDamage(enemy) < health[0]) continue;
-      switch (Menu.Get('rMode')) {
-        case 0: {
-          if (enemy.Distance(Player.Position) > powPowRange) {
+      if (health[0] > 0 && R.GetDamage(enemy) > health[0]) {
+        switch (Menu.Get('rMode')) {
+          case 0: {
+            if (enemy.Distance(Player.Position) > powPowRange) {
+              return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
+            }
+            break;
+          }
+          case 1: {
+            const distance = enemy.Distance(Player.Position);
+            if (
+              distance > Menu.Get('rMinRange') &&
+              distance < Menu.Get('rMaxRange')
+            ) {
+              return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
+            }
+            break;
+          }
+          case 2: {
             return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
           }
-          break;
+          default:
+            break;
         }
-        case 1: {
-          const distance = enemy.Distance(Player.Position);
-          if (
-            distance > Menu.Get('rMinRange') &&
-            distance < Menu.Get('rMaxRange')
-          ) {
-            return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
-          }
-          break;
-        }
-        case 2: {
-          return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
-        }
-        default:
-          break;
       }
     }
   }
@@ -453,17 +454,21 @@ function WaveClear(): void {
   }
 }
 
+function IsAnyoneInRange(enemies: AIHeroClient[]): boolean {
+  for (let i = 0; i < enemies.length; i++) {
+    if (enemies[i].EdgeDistance(Player.Position) <= powPowRange + 50)
+      return true;
+  }
+  return false;
+}
+
 function Harass(enemies: AIHeroClient[]): void {
   if (Menu.Get('eHarass') && HasMana(Menu.Get('eHarassMana'))) {
     if (tryE(enemies, GetHitChance('eHarassHit'))) return;
   }
   if (Menu.Get('qHarass')) {
-    if (
-      !isFishBones &&
-      (enemies.length === 0 || !HasMana(Menu.Get('qHarassMana'))) &&
-      Q.IsReady()
-    ) {
-      if (Q.Cast()) return;
+    if (!IsAnyoneInRange(enemies) || !HasMana(Menu.Get('qHarassMana'))) {
+      if (!isFishBones && Q.IsReady() && Q.Cast()) return;
     } else if (HasMana(Menu.Get('qHarassMana')) && enemies.length > 0) {
       if (tryQ(enemies)) return;
     }
