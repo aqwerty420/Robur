@@ -107,7 +107,7 @@ function GetAoeCount(target, enemies)
     do
         local i = 0
         while i < #enemies do
-            if (target.Name ~= enemies[i + 1].Name) and (target.Position:Distance(enemies[i + 1].Position) < radius) then
+            if target.Position:Distance(enemies[i + 1].Position) < radius then
                 count = count + 1
             end
             i = i + 1
@@ -118,9 +118,9 @@ end
 function ShouldSwap(target, enemies)
     local distanceTarget = target:EdgeDistance(Player.Position)
     local isInFishBonesRange = distanceTarget < fishbonesRange
-    local notInOverswaprange = distanceTarget < (525 - Menu.Get("overSwap"))
+    local notInOverswaprange = distanceTarget < (fishbonesRange - Menu.Get("overSwap"))
     local isFullStack = fishbonesStack == 3
-    local canAoe = GetAoeCount(target, enemies) > (Menu.Get("aoeCount") - 1)
+    local canAoe = GetAoeCount(target, enemies) >= Menu.Get("aoeCount")
     if isFishBones then
         return (not isInFishBonesRange) or ((Menu.Get("qAOEFullstack") and canAoe) and isFullStack)
     end
@@ -556,7 +556,7 @@ local function InitMenu()
                 "Harass",
                 function()
                     Menu.Checkbox("qHarass", "Use [Q]", true)
-                    Menu.Slider("qHarassMana", "Min. Mana % ", 40, 0, 100, 5)
+                    Menu.Slider("qHarassMana", "Min. Mana % ", 20, 0, 100, 5)
                     Menu.Checkbox("wHarass", "Use [W]", true)
                     Menu.Dropdown("wHarassHit", "Hitchance", 4, hitchances)
                     Menu.Slider("wHarassMana", "Min. Mana % ", 40, 0, 100, 5)
@@ -585,10 +585,10 @@ local function InitMenu()
                 "qConfig",
                 "[Q] Config",
                 function()
+                    Menu.Slider("overSwap", "Anti Overswap", 60, 0, 150, 10)
                     Menu.Checkbox("qAOEFullstack", "AOE fullstack", true)
                     Menu.Slider("aoeCount", "Min. Hitcount ", 2, 1, 3, 1)
                     Menu.Slider("aoeRadius", "AOE Radius ", 300, 100, 300, 50)
-                    Menu.Slider("overSwap", "Anti Overswap", 60, 0, 150, 10)
                 end
             )
             Menu.NewTree(

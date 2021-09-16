@@ -148,7 +148,7 @@ function InitMenu(): void {
     });
     Menu.NewTree('harass', 'Harass', function () {
       Menu.Checkbox('qHarass', 'Use [Q]', true);
-      Menu.Slider('qHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
+      Menu.Slider('qHarassMana', 'Min. Mana % ', 20, 0, 100, 5);
       Menu.Checkbox('wHarass', 'Use [W]', true);
       Menu.Dropdown('wHarassHit', 'Hitchance', 4, hitchances);
       Menu.Slider('wHarassMana', 'Min. Mana % ', 40, 0, 100, 5);
@@ -165,10 +165,10 @@ function InitMenu(): void {
       Menu.Slider('qWaveClearMana', 'Min. Mana % ', 40, 0, 100, 5);
     });
     Menu.NewTree('qConfig', '[Q] Config', function () {
+      Menu.Slider('overSwap', 'Anti Overswap', 60, 0, 150, 10);
       Menu.Checkbox('qAOEFullstack', 'AOE fullstack', true);
       Menu.Slider('aoeCount', 'Min. Hitcount ', 2, 1, 3, 1);
       Menu.Slider('aoeRadius', 'AOE Radius ', 300, 100, 300, 50);
-      Menu.Slider('overSwap', 'Anti Overswap', 60, 0, 150, 10);
     });
     Menu.NewTree('wConfig', '[W] Config', function () {
       Menu.Dropdown('wMode', 'Cast mode: ', 0, wModes);
@@ -308,10 +308,7 @@ function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]): number {
   let count = 0;
   const radius = Menu.Get('aoeRadius');
   for (let i = 0; i < enemies.length; i++) {
-    if (
-      target.Name != enemies[i].Name &&
-      target.Position.Distance(enemies[i].Position) < radius
-    ) {
+    if (target.Position.Distance(enemies[i].Position) < radius) {
       count++;
     }
   }
@@ -321,9 +318,10 @@ function GetAoeCount(target: AIHeroClient, enemies: AIHeroClient[]): number {
 function ShouldSwap(target: AIHeroClient, enemies: AIHeroClient[]): boolean {
   const distanceTarget = target.EdgeDistance(Player.Position);
   const isInFishBonesRange = distanceTarget < fishbonesRange;
-  const notInOverswaprange = distanceTarget < 525 - Menu.Get('overSwap');
+  const notInOverswaprange =
+    distanceTarget < fishbonesRange - Menu.Get('overSwap');
   const isFullStack = fishbonesStack === 3;
-  const canAoe = GetAoeCount(target, enemies) > Menu.Get('aoeCount') - 1;
+  const canAoe = GetAoeCount(target, enemies) >= Menu.Get('aoeCount');
   if (isFishBones) {
     return (
       !isInFishBonesRange ||
