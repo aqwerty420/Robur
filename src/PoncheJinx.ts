@@ -166,7 +166,7 @@ function InitMenu(): void {
     });
     Menu.NewTree('qConfig', '[Q] Config', function () {
       Menu.Slider('overSwap', 'Anti Overswap', 60, 0, 150, 10);
-      Menu.Checkbox('qAOEFullstack', 'AOE fullstack', true);
+      Menu.Checkbox('qAOEFullstack', 'Switch AOE fullstack', true);
       Menu.Slider('aoeCount', 'Min. Hitcount ', 2, 1, 3, 1);
       Menu.Slider('aoeRadius', 'AOE Radius ', 300, 100, 300, 50);
     });
