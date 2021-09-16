@@ -157,16 +157,15 @@ function InitMenu(): void {
       Menu.Slider('eHarassMana', 'Min. Mana % ', 0, 0, 100, 5);
     });
     Menu.NewTree('lastHit', 'Last Hit', function () {
-      Menu.Checkbox('qLastHit', 'Use [Q]', true);
-      Menu.Text('Just switch back to Fishbones');
+      Menu.Checkbox('qLastHit', 'Auto [Q] disable', true);
     });
     Menu.NewTree('waveClear', 'Wave Clear', function () {
       Menu.Checkbox('qWaveClear', 'Use [Q]', false);
       Menu.Slider('qWaveClearMana', 'Min. Mana % ', 40, 0, 100, 5);
     });
     Menu.NewTree('qConfig', '[Q] Config', function () {
-      Menu.Slider('overSwap', 'Anti Overswap', 60, 0, 150, 10);
-      Menu.Checkbox('qAOEFullstack', 'Switch AOE fullstack', true);
+      Menu.Slider('overSwap', 'Anti Overswap', 0, 0, 150, 10);
+      Menu.Checkbox('qAOEFullstack', 'Switch AOE fullstack', false);
       Menu.Slider('aoeCount', 'Min. Hitcount ', 2, 1, 3, 1);
       Menu.Slider('aoeRadius', 'AOE Radius ', 300, 100, 300, 50);
     });
