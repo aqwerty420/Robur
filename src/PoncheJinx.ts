@@ -358,7 +358,7 @@ function tryW(hitchance: keyof Enums_HitChance): boolean {
   const WCast = SpellLib.Skillshot(wInput);
   switch (Menu.Get('wMode')) {
     case 0: {
-      if (target.Position.Distance(Player.Position) > powPowRange) {
+      if (target.EdgeDistance(Player.Position) > powPowRange) {
         return WCast.CastOnHitChance(target, hitchance);
       }
       break;
@@ -484,8 +484,7 @@ function WaveClear(): void {
 
 function IsAnyoneInRange(enemies: AIHeroClient[]): boolean {
   for (let i = 0; i < enemies.length; i++) {
-    if (enemies[i].EdgeDistance(Player.Position) <= powPowRange + 50)
-      return true;
+    if (enemies[i].EdgeDistance(Player.Position) <= powPowRange) return true;
   }
   return false;
 }

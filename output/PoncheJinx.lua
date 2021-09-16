@@ -160,7 +160,7 @@ function tryW(hitchance)
         local ____cond54 = ____switch54 == 0
         if ____cond54 then
             do
-                if target.Position:Distance(Player.Position) > powPowRange then
+                if target:EdgeDistance(Player.Position) > powPowRange then
                     return WCast:CastOnHitChance(target, hitchance)
                 end
                 break
@@ -328,7 +328,7 @@ function IsAnyoneInRange(enemies)
     do
         local i = 0
         while i < #enemies do
-            if enemies[i + 1]:EdgeDistance(Player.Position) <= (powPowRange + 50) then
+            if enemies[i + 1]:EdgeDistance(Player.Position) <= powPowRange then
                 return true
             end
             i = i + 1
