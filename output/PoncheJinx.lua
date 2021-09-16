@@ -196,7 +196,7 @@ function tryR()
             rInput.Speed = distanceToHit / timeToHit
             local RC = SpellLib.Skillshot(rInput)
             local health = {
-                HealthPred.GetHealthPrediction(enemy, timeToHit, true)
+                HealthPred.GetHealthPrediction(enemy, timeToHit, false)
             }
             if (health[1] > 0) and (R:GetDamage(enemy) > health[1]) then
                 repeat

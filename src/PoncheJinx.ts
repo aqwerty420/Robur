@@ -382,7 +382,7 @@ function tryR(): boolean {
           : 1350 / rSpeed1 + (distanceToHit - 1350) / rSpeed2);
       rInput.Speed = distanceToHit / timeToHit;
       const RC = SpellLib.Skillshot(rInput);
-      const health = HealthPred.GetHealthPrediction(enemy, timeToHit, true);
+      const health = HealthPred.GetHealthPrediction(enemy, timeToHit, false);
       if (health[0] > 0 && R.GetDamage(enemy) > health[0]) {
         switch (Menu.Get('rMode')) {
           case 0: {
