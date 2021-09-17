@@ -37,10 +37,10 @@ const wInput = {
   Range: 1500,
   Speed: 3300,
   Delay: 0,
-  Radius: 120,
+  Radius: 60,
   Type: SpellType.Linear,
   UseHitbox: true,
-  Collisions: { WindWall: true, Minions: true },
+  Collisions: { Heroes: true, Minions: true, WindWall: true },
 };
 
 const W = SpellLib.Skillshot(wInput);
@@ -48,8 +48,8 @@ const W = SpellLib.Skillshot(wInput);
 const eInput = {
   Slot: SpellSlots.E,
   Range: 900,
-  Speed: 1850,
-  Delay: 0.9, // 0.4 + 0.5
+  Speed: 1750,
+  Delay: 0.9, // 1.5
   Radius: 115,
   Type: SpellType.Circular,
   UseHitbox: false,
@@ -63,10 +63,10 @@ const rInput = {
   Range: math.huge,
   Speed: rSpeed1,
   Delay: 0.6,
-  Radius: 280,
-  Type: SpellType.Circular,
-  UseHitbox: false,
-  Collisions: { WindWall: true },
+  Radius: 140,
+  Type: SpellType.Linear,
+  UseHitbox: true,
+  Collisions: { Heroes: true, WindWall: true },
 };
 
 const R = SpellLib.Skillshot(rInput);
@@ -156,9 +156,6 @@ function InitMenu(): void {
       Menu.Dropdown('eHarassHit', 'Hitchance', 5, hitchances);
       Menu.Slider('eHarassMana', 'Min. Mana % ', 0, 0, 100, 5);
     });
-    Menu.NewTree('lastHit', 'Last Hit', function () {
-      Menu.Checkbox('qLastHit', 'Auto [Q] disable', true);
-    });
     Menu.NewTree('waveClear', 'Wave Clear', function () {
       Menu.Checkbox('qWaveClear', 'Use [Q]', false);
       Menu.Slider('qWaveClearMana', 'Min. Mana % ', 40, 0, 100, 5);
@@ -174,8 +171,8 @@ function InitMenu(): void {
       Menu.Slider('wMinRange', 'Min. distance', 900, 0, wInput.Range, 50);
     });
     Menu.NewTree('eConfig', '[E] Config', function () {
-      Menu.Checkbox('eOnGapclose', 'Auto on gapclose', true);
-      Menu.NewTree('eOnEnemyGap', 'On enemy gapclose:', function () {
+      Menu.Checkbox('eOnGapclose', 'Auto on gapclose/dash', true);
+      Menu.NewTree('eOnEnemyGap', 'On enemy:', function () {
         for (const enemyName of enemiesName) {
           Menu.Checkbox('eOnGap' + enemyName, enemyName, true);
         }
@@ -438,26 +435,44 @@ function tryR(): boolean {
   return false;
 }
 
-function Combo(enemies: AIHeroClient[]): void {
-  if (Menu.Get('eCombo')) {
-    if (tryE(enemies, GetHitChance('eComboHit'))) return;
+function HasStatik(): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const [key, item] of pairs(Player.Items)) {
+    if (item && item.ItemId === 3094) {
+      return true;
+    }
   }
-  if (Menu.Get('qCombo')) {
-    if (tryQ(enemies)) return;
+  return false;
+}
+
+function IsAnyoneInRange(enemies: AIHeroClient[]): boolean {
+  for (let i = 0; i < enemies.length; i++) {
+    if (enemies[i].EdgeDistance(Player.Position) <= powPowRange) return true;
   }
-  if (Menu.Get('wCombo')) {
-    if (tryW(GetHitChance('wComboHit'))) return;
+  return false;
+}
+
+function AutoQDisabler(): boolean {
+  return !isFishBones && Q.IsReady() && Q.Cast();
+}
+
+function HarassQ(enemies: AIHeroClient[]): boolean {
+  if (
+    !Menu.Get('qHarass') ||
+    !IsAnyoneInRange(enemies) ||
+    !HasMana(Menu.Get('qHarassMana'))
+  ) {
+    return AutoQDisabler();
   }
+  return enemies.length > 0 && tryQ(enemies);
 }
 
 function WaveClear(): void {
-  if (!Q.IsReady()) return;
   if (!Menu.Get('qWaveClear')) {
-    if (!isFishBones) {
-      Q.Cast();
-    }
+    AutoQDisabler();
     return;
   }
+  if (!Q.IsReady()) return;
   if (!HasMana(Menu.Get('qWaveClearMana'))) {
     if (!isFishBones) Q.Cast();
     return;
@@ -485,49 +500,34 @@ function WaveClear(): void {
   }
 }
 
-function IsAnyoneInRange(enemies: AIHeroClient[]): boolean {
-  for (let i = 0; i < enemies.length; i++) {
-    if (enemies[i].EdgeDistance(Player.Position) <= powPowRange) return true;
-  }
-  return false;
+function LastHit(): void {
+  AutoQDisabler();
 }
 
 function Harass(enemies: AIHeroClient[]): void {
-  if (Menu.Get('eHarass') && HasMana(Menu.Get('eHarassMana'))) {
-    if (tryE(enemies, GetHitChance('eHarassHit'))) return;
-  }
-  if (Menu.Get('qHarass')) {
-    if (!IsAnyoneInRange(enemies) || !HasMana(Menu.Get('qHarassMana'))) {
-      if (!isFishBones && Q.IsReady() && Q.Cast()) return;
-    } else if (HasMana(Menu.Get('qHarassMana')) && enemies.length > 0) {
-      if (tryQ(enemies)) return;
-    }
-  } else {
-    if (!isFishBones && Q.IsReady() && Q.Cast()) return;
-  }
-  if (Menu.Get('wHarass') && HasMana(Menu.Get('wHarassMana'))) {
-    if (tryW(GetHitChance('wHarassHit'))) return;
-  }
+  if (
+    Menu.Get('eHarass') &&
+    HasMana(Menu.Get('eHarassMana')) &&
+    tryE(enemies, GetHitChance('eHarassHit'))
+  )
+    return;
+  if (HarassQ(enemies)) return;
+  if (
+    Menu.Get('wHarass') &&
+    HasMana(Menu.Get('wHarassMana')) &&
+    tryW(GetHitChance('wHarassHit'))
+  )
+    return;
 }
 
-function HasStatik(): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  for (const [key, item] of pairs(Player.Items)) {
-    if (item && item.ItemId === 3094) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function LastHit(): void {
-  if (Menu.Get('qLastHit') && Q.IsReady() && !isFishBones) Q.Cast();
+function Combo(enemies: AIHeroClient[]): void {
+  if (Menu.Get('eCombo') && tryE(enemies, GetHitChance('eComboHit'))) return;
+  if (Menu.Get('qCombo') && tryQ(enemies)) return;
+  if (Menu.Get('wCombo') && tryW(GetHitChance('wComboHit'))) return;
 }
 
 function Auto(): boolean {
-  if (Menu.Get('rAuto')) {
-    return tryR();
-  }
+  return Menu.Get('rAuto') && tryR();
 }
 
 function UpdateStats(): void {
