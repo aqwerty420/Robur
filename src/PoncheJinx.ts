@@ -403,11 +403,15 @@ function tryR(): boolean {
           : 1350 / rSpeed1 + (distanceToHit - 1350) / rSpeed2);
       rInput.Speed = distanceToHit / timeToHit;
       const RC = SpellLib.Skillshot(rInput);
-      const health = HealthPred.GetHealthPrediction(enemy, timeToHit, false);
-      if (health[0] > 0 && R.GetDamage(enemy) > health[0]) {
+      const healthPredicted = HealthPred.GetHealthPrediction(
+        enemy,
+        timeToHit,
+        false
+      );
+      if (healthPredicted[0] > 0 && R.GetDamage(enemy) > healthPredicted[0]) {
         switch (Menu.Get('rMode')) {
           case 0: {
-            if (enemy.Distance(Player.Position) > powPowRange) {
+            if (enemy.EdgeDistance(Player.Position) > powPowRange) {
               return RC.CastOnHitChance(enemy, GetHitChance('rHit'));
             }
             break;

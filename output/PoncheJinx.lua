@@ -213,16 +213,16 @@ function tryR()
             local timeToHit = rInput.Delay + (((distanceToHit <= 1350) and (function() return distanceToHit / rSpeed1 end)) or (function() return (1350 / rSpeed1) + ((distanceToHit - 1350) / rSpeed2) end))()
             rInput.Speed = distanceToHit / timeToHit
             local RC = SpellLib.Skillshot(rInput)
-            local health = {
+            local healthPredicted = {
                 HealthPred.GetHealthPrediction(enemy, timeToHit, false)
             }
-            if (health[1] > 0) and (R:GetDamage(enemy) > health[1]) then
+            if (healthPredicted[1] > 0) and (R:GetDamage(enemy) > healthPredicted[1]) then
                 repeat
                     local ____switch68 = Menu.Get("rMode")
                     local ____cond68 = ____switch68 == 0
                     if ____cond68 then
                         do
-                            if enemy:Distance(Player.Position) > powPowRange then
+                            if enemy:EdgeDistance(Player.Position) > powPowRange then
                                 return RC:CastOnHitChance(
                                     enemy,
                                     GetHitChance("rHit")

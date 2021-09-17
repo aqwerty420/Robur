@@ -16,7 +16,7 @@ interface HealthPred {
   GetHealthPrediction(
     Target: AttackableUnit,
     Time: number,
-    SimulateDmg: boolean
+    SimulateDmg?: boolean
   ): LuaMultiReturn<[number, number, number]>;
   /**
    * @param DmgType Enum_DamageTypes
@@ -24,6 +24,6 @@ interface HealthPred {
   GetKillstealHealth(
     Target: AIHeroClient,
     Time: number,
-    DmgType: keyof Enum_DamageTypes
+    DmgType: keyof Enum_DamageTypes | number
   ): number;
 }
